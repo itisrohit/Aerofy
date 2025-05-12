@@ -282,16 +282,33 @@ export default function AuthPage() {
                 Back to home
               </Link>
             </div>
-            
-            {/* Mobile logo */}
-            <div className="flex justify-center lg:hidden mb-8">
-              <Image 
-                src="/Logo.png" 
-                alt="Aerofy Logo" 
-                width={150} 
-                height={50}
-                className="h-auto"
-              />
+            {/* Mobile logo - minimalistic security icon */}
+            <div className="flex flex-col items-center lg:hidden mb-8">
+              <div className="mb-3 relative">
+                <svg
+                  width="64"
+                  height="64"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <rect width="24" height="24" rx="12" fill="#f8fafc" />
+                  <path
+                    d="M12 4L6 7.5V12.5C6 15.8 8.4 18.9 12 20C15.6 18.9 18 15.8 18 12.5V7.5L12 4Z"
+                    fill="#e2e8f0"
+                    stroke="#64748b"
+                    strokeWidth="1"
+                  />
+                  <path
+                    d="M10 12L11.5 13.5L14.5 10.5"
+                    stroke="#6366f1"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+              <h2 className="text-xl font-medium text-slate-700">Secure Access</h2>
             </div>
             
             <Card className="w-full border-none shadow-lg backdrop-blur-sm bg-white/80">
