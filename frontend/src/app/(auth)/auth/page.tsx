@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { Mail, Lock, User, ArrowRight, Check, Loader2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -524,7 +523,7 @@ export default function AuthPage() {
                 <div className="mt-6 text-center text-sm">
                   {activeTab === "login" ? (
                     <p className="text-muted-foreground">
-                      Don't have an account?{" "}
+                      Don&apos;t have an account?{" "}
                       <button 
                         className="text-primary hover:underline font-medium"
                         onClick={() => setActiveTab("signup")}
