@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Aerofy",
-  description: "Your application description",
+  description: "Fast and secure file transfer service for seamless sharing across devices",
 };
 
 export default function RootLayout({

@@ -356,18 +356,18 @@ export default function SendPage() {
               <UploadCloud className="w-10 h-10 text-white" />
             </div>
           </div>
-          <div className="mt-6 flex gap-3">
-            <div className="flex items-center bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
-              <Lock className="h-4 w-4 text-blue-100 mr-2" />
-              <span className="text-sm text-blue-100">Password Protected</span>
+          <div className="mt-6 flex flex-wrap gap-2 sm:gap-3">
+            <div className="flex items-center bg-white/20 backdrop-blur-sm rounded-full px-2 sm:px-4 py-1 sm:py-2">
+              <Lock className="h-4 w-4 text-blue-100 mr-1 sm:mr-2" />
+              <span className="text-xs sm:text-sm text-blue-100">Password Protected</span>
             </div>
-            <div className="flex items-center bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
-              <Calendar className="h-4 w-4 text-blue-100 mr-2" />
-              <span className="text-sm text-blue-100">Set Expiration</span>
+            <div className="flex items-center bg-white/20 backdrop-blur-sm rounded-full px-2 sm:px-4 py-1 sm:py-2">
+              <Calendar className="h-4 w-4 text-blue-100 mr-1 sm:mr-2" />
+              <span className="text-xs sm:text-sm text-blue-100">Set Expiration</span>
             </div>
-            <div className="flex items-center bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
-              <Mail className="h-4 w-4 text-blue-100 mr-2" />
-              <span className="text-sm text-blue-100">Email Delivery</span>
+            <div className="flex items-center bg-white/20 backdrop-blur-sm rounded-full px-2 sm:px-4 py-1 sm:py-2">
+              <Mail className="h-4 w-4 text-blue-100 mr-1 sm:mr-2" />
+              <span className="text-xs sm:text-sm text-blue-100">Email Delivery</span>
             </div>
           </div>
         </div>
