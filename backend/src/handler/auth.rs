@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use axum::{http::{header, HeaderMap, StatusCode}, response::IntoResponse, routing::post, Extension, Json, Router};
+use axum::{http::{header, HeaderMap}, response::IntoResponse, routing::post, Extension, Json, Router};
 use axum_extra::extract::cookie::Cookie;
 use validator::Validate;
 
-use crate::{db::UserExt, dtos::{LoginUserDto, RegisterUserDto, Response, UserLoginResponseDto}, error::{ErrorMessage, HttpError}, utils::{keys::generate_key, password, token}, AppState};
+use crate::{db::UserExt, dtos::{LoginUserDto, RegisterUserDto, UserLoginResponseDto}, error::{ErrorMessage, HttpError}, utils::{keys::generate_key, password, token}, AppState};
 
 pub fn auth_handler() -> Router {
     Router::new()
@@ -29,12 +29,24 @@ pub async fn register(
 
     match result {
         Ok(user) => {
-            let _key_result = generate_key(app_state, user).await?;
-
-            Ok((StatusCode::CREATED, Json(Response {
-                message: "Registrations successful!".to_string(),
-                status: "success",
-            })))
+            let _key_result = generate_key(&app_state, &user).await?;
+            let token = token::create_token(&user.id.to_string(), &app_state.env.jwt_secret.as_bytes(), app_state.env.jwt_maxage)
+            .map_err(|e| HttpError::server_error(e.to_string()))?;
+            let cookie_duration = time::Duration::minutes(app_state.env.jwt_maxage * 60);
+            let cookie = Cookie::build(("token", token.clone()))
+                .path("/")
+                .max_age(cookie_duration)
+                .http_only(true)
+                .build();
+            let response = Json(UserLoginResponseDto {
+                status: "success".to_string(),
+                token,
+            });
+            let mut headers = HeaderMap::new();
+            headers.append(header::SET_COOKIE, cookie.to_string().parse().unwrap());
+            let mut response = response.into_response();
+            response.headers_mut().extend(headers);
+            Ok(response)
         },
         Err(sqlx::Error::Database(db_err)) => {
             if db_err.is_unique_violation() {

@@ -10,8 +10,8 @@ use crate::{db::UserExt, error::HttpError, models::User, AppState};
 
 
 pub async fn generate_key(
-    app_state: Arc<AppState>,
-    user: User,
+    app_state: &Arc<AppState>,
+    user: &User,
 ) -> Result<impl IntoResponse, HttpError> {
 
     let mut rng = OsRng;

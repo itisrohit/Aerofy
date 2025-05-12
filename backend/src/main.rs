@@ -3,10 +3,10 @@ mod models;
 mod dtos;
 mod error;
 mod db;
-// mod utils;
-// mod middleware;
-// mod handler;
-// mod router;
+mod utils;
+mod middleware;
+mod handler;
+mod router;
 
 
 use std::sync::Arc;

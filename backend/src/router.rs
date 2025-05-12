@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use axum::{middleware, Extension, Router};
+use axum::{middleware, Extension, Router, Json, response::IntoResponse, routing::get};
 use tower_http::trace::TraceLayer;
 
 use crate::{handler::{auth::auth_handler, file::file_handle, file_query::get_file_list_handler, user::users_handler}, middleware::auth, AppState};
@@ -26,5 +26,14 @@ pub fn create_router(app_state: Arc<AppState>) -> Router {
         .layer(TraceLayer::new_for_http())
         .layer(Extension(app_state));
 
-    Router::new().nest("/api", api_route)
+    Router::new()
+        .nest("/api", api_route)
+        .route("/", get(root_handler))
+}
+
+async fn root_handler() -> impl IntoResponse {
+    Json(serde_json::json!({
+        "message": "Welcome to Aerofy API",
+        "version": "1.0"
+    }))
 }
