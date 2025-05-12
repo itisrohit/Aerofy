@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  eslint: {
+    // Only run ESLint on these directories during builds
+    dirs: ['src']
+  }
 };
 
 export default nextConfig;

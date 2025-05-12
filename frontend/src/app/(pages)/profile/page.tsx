@@ -61,7 +61,7 @@ export default function ProfilePage() {
         const userData = await userService.getCurrentUser();
         setUser(userData);
         setNewUsername(userData.username);
-      } catch (error) {
+      } catch {
         toast.error("Failed to load user data");
       } finally {
         setIsLoading(false);
@@ -84,7 +84,7 @@ export default function ProfilePage() {
       await userService.updateUsername(newUsername);
       setUser(prev => prev ? { ...prev, username: newUsername } : null);
       toast.success("Username updated successfully");
-    } catch (error) {
+    } catch {
       toast.error("Failed to update username");
     } finally {
       setIsUpdatingUsername(false);
@@ -111,7 +111,7 @@ export default function ProfilePage() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-    } catch (error) {
+    } catch {
       toast.error("Failed to update password");
     } finally {
       setIsUpdatingPassword(false);
