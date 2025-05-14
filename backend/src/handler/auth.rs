@@ -24,9 +24,9 @@ fn create_auth_cookie(token: &str, maxage_minutes: Option<i64>) -> Cookie<'stati
     Cookie::build(("token", token.to_string()))
         .path("/")
         .max_age(duration)
-        .secure(true) 
+        // .secure(true) 
         .same_site(axum_extra::extract::cookie::SameSite::None)
-        .http_only(true)
+        // .http_only(true)
         .build()
 }
 
@@ -35,6 +35,7 @@ fn create_auth_response<T: Serialize>(data: T, cookie: Cookie<'static>) -> axum:
     
     let mut headers = HeaderMap::new();
     headers.append(header::SET_COOKIE, cookie.to_string().parse().unwrap());
+
     
     let mut response = json_response.into_response();
     response.headers_mut().extend(headers);
