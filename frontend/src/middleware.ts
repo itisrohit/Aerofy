@@ -4,9 +4,10 @@ import {jwtVerify} from 'jose';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 export async function middleware(request: NextRequest) {
+     console.log("Cookies in request:", request.cookies.getAll());
     let isAuthenticated = false;
     const authCookie = request.cookies.get('token');
-    
+    console.log("Auth cookie found:", authCookie);
     
     if (authCookie?.value && authCookie.value !== 'undefined') {
         try {
