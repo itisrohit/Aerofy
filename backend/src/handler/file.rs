@@ -1,10 +1,9 @@
-use std::{fs, path::PathBuf, sync::Arc};
+use std::sync::Arc;
 
 use axum::{body::Body, extract::Multipart, http::{Response, StatusCode}, response::IntoResponse, routing::post, Extension, Json, Router};
 use chrono::{DateTime, Utc};
 use rsa::{pkcs1::{DecodeRsaPrivateKey, DecodeRsaPublicKey}, RsaPrivateKey, RsaPublicKey};
 use validator::Validate;
-use base64::{engine::general_purpose::STANDARD, Engine};
 
 use crate::{db::UserExt, dtos::{FileUploadDtos, Response as ResponseDto, RetrieveFileDto}, error::HttpError, middleware::JWTAuthMiddeware, utils::{decrypt::decrypt_file, encrypt::encrypt_file, password}, AppState};
 
@@ -59,27 +58,33 @@ pub async fn upload_file(
         .await
         .map_err(|e| HttpError::server_error(e.to_string()))?;
 
-    let recipient_user = recipient_result.ok_or(HttpError::bad_request("Recipient user not found"))?;
-
-    let public_key_str = match &recipient_user.public_key {
-        Some(key) => key,
-        None => return Err(HttpError::bad_request("Recipient user has no public key")),
+    let recipient = match recipient_result {
+        Some(user) => user,
+        None => {
+            return Err(HttpError::not_found("Recipient not found".to_string()));
+        }
     };
 
-    let public_key_bytes = STANDARD.decode(public_key_str)
-        .map_err(|e| HttpError::server_error(e.to_string()))?;
+    let public_key_str = match &recipient.public_key {
+        Some(key) => key,
+        None => {
+            return Err(HttpError::bad_request("Recipient has no public key".to_string()));
+        }
+    };
 
-    let public_key = String::from_utf8(public_key_bytes)
-        .map_err(|e| HttpError::server_error(e.to_string()))?;
-
-    let public_key_pem = RsaPublicKey::from_pkcs1_pem(&public_key)
-        .map_err(|e| HttpError::server_error(e.to_string()))?;
+    let public_key = match RsaPublicKey::from_pkcs1_pem(public_key_str) {
+        Ok(key) => key,
+        Err(e) => {
+            tracing::error!("Failed to parse PKCS1 PEM key: {}", e);
+            return Err(HttpError::server_error(format!("Key parsing error: {}", e)));
+        }
+    };
 
     let (
         encrypted_aes_key,
         encrypted_data,
         iv
-    ) = encrypt_file(file_data, &public_key_pem).await?;
+    ) = encrypt_file(file_data, &public_key).await?;
 
     let user_id = uuid::Uuid::parse_str(&user.user.id.to_string()).unwrap();
 
@@ -90,7 +95,7 @@ pub async fn upload_file(
         .map_err(|e| HttpError::server_error(e.to_string()))?
         .with_timezone(&Utc);
 
-    let recipient_user_id = uuid::Uuid::parse_str(&recipient_user.id.to_string()).unwrap();
+    let recipient_user_id = uuid::Uuid::parse_str(&recipient.id.to_string()).unwrap();
 
     app_state.db_client
         .save_encrypted_file(
@@ -120,38 +125,38 @@ pub async fn retrieve_file(
     Extension(user): Extension<JWTAuthMiddeware>,
     Json(body): Json<RetrieveFileDto>
 ) -> Result<impl IntoResponse, HttpError> {
-    body.validate()
-        .map_err(|e| HttpError::bad_request(e.to_string()))?;
-
-    let user_id = uuid::Uuid::parse_str(&user.user.id.to_string()).unwrap();
-    let shared_id = uuid::Uuid::parse_str(&body.shared_id.to_string()).unwrap();
-
-    let shared_result = app_state.db_client
-        .get_shared(shared_id.clone(), user_id.clone())
+    // Validate the request body
+    body.validate().map_err(|e| HttpError::bad_request(e.to_string()))?;
+    
+    // Parse the shared_id from string to UUID
+    let shared_id = uuid::Uuid::parse_str(&body.shared_id)
+        .map_err(|e| HttpError::bad_request(format!("Invalid shared ID: {}", e)))?;
+    
+    // Get the user's UUID
+    let user_id = user.user.id;
+    
+    // Get the shared link from the database
+    let shared_link = app_state.db_client
+        .get_shared(shared_id, user_id)
         .await
+        .map_err(|e| HttpError::server_error(e.to_string()))?
+        .ok_or_else(|| HttpError::bad_request("Shared link not found or has expired".to_string()))?;
+    
+    // Verify the password
+    let is_valid = password::compare(&body.password, &shared_link.password)
         .map_err(|e| HttpError::server_error(e.to_string()))?;
-
-    let shared_data = shared_result.ok_or_else(|| {
-        HttpError::bad_request("The requested shared link either does not exist or has expired.".to_string())
-    })?;
-
-    let match_password = password::compare(&body.password, &shared_data.password)
-    .map_err(|e| HttpError::server_error(e.to_string()))?;
-
-    if !match_password {
-        return Err(HttpError::bad_request("The provided password is incorrect.".to_string()));
+    
+    if !is_valid {
+        return Err(HttpError::unauthorized("Invalid password".to_string()));
     }
-
-    let file_id = match shared_data.file_id {
-        Some(id) => id,
-        None => {
-            // Handle the case when file_id is None
-            return Err(HttpError::bad_request("File ID is missing".to_string()));
-        }
-    };
-
+    
+    // Get the file ID from the shared link
+    let file_id = shared_link.file_id
+        .ok_or_else(|| HttpError::server_error("File ID not found in shared link".to_string()))?;
+    
+    // Get the file from the database
     let file_result = app_state.db_client
-        .get_file(file_id.clone())
+        .get_file(file_id)
         .await
         .map_err(|e| HttpError::server_error(e.to_string()))?;
 
@@ -159,12 +164,18 @@ pub async fn retrieve_file(
         HttpError::bad_request("The requested file either does not exist or has expired.".to_string())
     })?;
 
-    let mut path = PathBuf::from("assets/private_keys");
-    path.push(format!("{}.pem", user_id.clone()));
-
-    let private_key = fs::read_to_string(&path)
-        .map_err(|e| HttpError::server_error(e.to_string()))?;
-
+    // Get the user with their private key from the database
+    let user_data = app_state.db_client
+        .get_user_by_id(user.user.id)
+        .await
+        .map_err(|e| HttpError::server_error(e.to_string()))?
+        .ok_or_else(|| HttpError::unauthorized("User not found".to_string()))?;
+    
+    // Get private key from user data
+    let private_key = user_data.private_key
+        .ok_or_else(|| HttpError::server_error("Private key not found for user".to_string()))?;
+    
+    // Parse the PEM string into a RsaPrivateKey object
     let private_key_pem = RsaPrivateKey::from_pkcs1_pem(&private_key)
         .map_err(|e| HttpError::server_error(e.to_string()))?;
 
@@ -175,10 +186,11 @@ pub async fn retrieve_file(
         &private_key_pem
     ).await?;
 
+    // Create the response
     let response = Response::builder()
         .status(StatusCode::OK)
-        .header("Content-Disposition", format!("attachment; filename=\"{}\"", file_data.file_name))
         .header("Content-Type", "application/octet-stream")
+        .header("Content-Disposition", format!("attachment; filename=\"{}\"", file_data.file_name))
         .body(Body::from(decrypted_file))
         .map_err(|e| HttpError::server_error(e.to_string()))?;
 

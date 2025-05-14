@@ -14,6 +14,7 @@ CREATE TABLE users (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() -- When the account was last updated
 );
 
+ALTER TABLE users ADD COLUMN private_key TEXT;
 
 -- Files table - Stores encrypted files uploaded by users
 CREATE TABLE files (

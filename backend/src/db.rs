@@ -44,7 +44,7 @@ pub trait UserExt {
         password: String,
     ) -> Result<User, sqlx::Error>;
 
-    async fn save_user_key(&self, user_id: Uuid, public_key: String) -> Result<(), sqlx::Error>;
+    async fn save_user_keys(&self, user_id: Uuid, public_key: String, private_key: String) -> Result<(), sqlx::Error>;
 
     async fn search_by_email(&self, user_id: Uuid, query: String)
         -> Result<Vec<User>, sqlx::Error>;
@@ -90,6 +90,8 @@ pub trait UserExt {
     async fn delete_expired_files(
         &self
     ) -> Result<(), sqlx::Error>;
+
+    async fn get_user_by_id(&self, user_id: Uuid) -> Result<Option<User>, sqlx::Error>;
 }
 
 #[async_trait]
@@ -105,19 +107,19 @@ impl UserExt for DBClient {
         if let Some(user_id) = user_id {
             user = sqlx::query_as!(
                 User,
-                r#"SELECT id, name, email, password, public_key, created_at, updated_at FROM users WHERE id = $1"#,
+                r#"SELECT id, name, email, password, public_key, private_key, created_at, updated_at FROM users WHERE id = $1"#,
                 user_id
             ).fetch_optional(&self.pool).await?;
         } else if let Some(name) = name {
             user = sqlx::query_as!(
                 User,
-                r#"SELECT id, name, email, password, public_key, created_at, updated_at FROM users WHERE name = $1"#,
+                r#"SELECT id, name, email, password, public_key, private_key, created_at, updated_at FROM users WHERE name = $1"#,
                 name
             ).fetch_optional(&self.pool).await?;
         } else if let Some(email) = email {
             user = sqlx::query_as!(
                 User,
-                r#"SELECT id, name, email, password, public_key, created_at, updated_at FROM users WHERE email = $1"#,
+                r#"SELECT id, name, email, password, public_key, private_key, created_at, updated_at FROM users WHERE email = $1"#,
                 email
             ).fetch_optional(&self.pool).await?;
         }
@@ -136,7 +138,7 @@ impl UserExt for DBClient {
             r#"
             INSERT INTO users (name, email, password) 
             VALUES ($1, $2, $3) 
-            RETURNING id, name, email, password, public_key, created_at, updated_at
+            RETURNING id, name, email, password, public_key, private_key, created_at, updated_at
             "#,
             name.into(),
             email.into(),
@@ -158,7 +160,7 @@ impl UserExt for DBClient {
             UPDATE users
             SET name = $1, updated_at = Now()
             WHERE id = $2
-            RETURNING id, name, email, password, public_key, created_at, updated_at
+            RETURNING id, name, email, password, public_key, private_key, created_at, updated_at
             "#,
             new_name.into(),
             user_id
@@ -180,7 +182,7 @@ impl UserExt for DBClient {
             UPDATE users
             SET password = $1, updated_at = Now()
             WHERE id = $2
-            RETURNING id, name, email, password, public_key, created_at, updated_at
+            RETURNING id, name, email, password, public_key, private_key, created_at, updated_at
             "#,
             new_password,
             user_id
@@ -191,23 +193,22 @@ impl UserExt for DBClient {
         Ok(user)
     }
 
-    async fn save_user_key(&self, user_id: Uuid, public_key: String) -> Result<(), sqlx::Error> {
-        sqlx::query_as!(
-            User,
+    async fn save_user_keys(&self, user_id: Uuid, public_key: String, private_key: String) -> Result<(), sqlx::Error> {
+        sqlx::query!(
             r#"
             UPDATE users
-            SET public_key = $1, updated_at = Now()
-            WHERE id = $2
-            RETURNING id, name, email, password, public_key, created_at, updated_at
+            SET public_key = $1, private_key = $2, updated_at = Now()
+            WHERE id = $3
             "#,
             public_key,
+            private_key,
             user_id
         )
-        .fetch_one(&self.pool)
+        .execute(&self.pool)
         .await?;
-
         Ok(())
     }
+
     async fn search_by_email(
         &self,
         user_id: Uuid,
@@ -216,7 +217,7 @@ impl UserExt for DBClient {
         let user = sqlx::query_as!(
             User,
             r#"
-            SELECT id, name, email, password, public_key, created_at, updated_at
+            SELECT id, name, email, password, public_key, private_key, created_at, updated_at
             FROM users
             WHERE email LIKE $1
             AND public_key IS NOT NULL
@@ -483,5 +484,19 @@ impl UserExt for DBClient {
 
         Ok(())
 
+    }
+
+    async fn get_user_by_id(&self, user_id: Uuid) -> Result<Option<User>, sqlx::Error> {
+        sqlx::query_as!(
+            User,
+            r#"
+            SELECT id, name, email, password, public_key, private_key, created_at, updated_at
+            FROM users
+            WHERE id = $1
+            "#,
+            user_id
+        )
+        .fetch_optional(&self.pool)
+        .await
     }
 }
