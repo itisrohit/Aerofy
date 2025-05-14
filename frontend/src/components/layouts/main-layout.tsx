@@ -1,9 +1,11 @@
-"use client"
+"use client";
 import * as React from "react";
 import Image from "next/image";
 import { Sidebar, SidebarItem } from "@/components/sidebar";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { toastSuccess, toastInfo } from "@/utility/toastStyle";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -11,24 +13,39 @@ interface MainLayoutProps {
 
 export function MainLayout({ children }: MainLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
-  
+  const { logout } = useAuth();
+
+  const handleLogout = (e: React.MouseEvent) => {
+    e.preventDefault();
+    toastInfo("Logging out...");
+    setTimeout(() => {
+      logout("/auth");
+      // Note: This success toast may not be visible due to redirect
+      toastSuccess("Logged out successfully");
+    }, 300);
+  };
+
   return (
     <div className="flex h-screen relative">
       {/* Mobile sidebar */}
-      <div className={`md:hidden fixed inset-0 z-50 bg-background/80 backdrop-blur-sm transition-all ${sidebarOpen ? "block" : "hidden"}`}>
+      <div
+        className={`md:hidden fixed inset-0 z-50 bg-background/80 backdrop-blur-sm transition-all ${
+          sidebarOpen ? "block" : "hidden"
+        }`}
+      >
         <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 flex flex-col">
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
-            <Image 
-              src="/Logo.png" 
-              alt="Aerofy Logo" 
-              width={120} 
-              height={40} 
-              className="h-auto" 
+            <Image
+              src="/Logo.png"
+              alt="Aerofy Logo"
+              width={120}
+              height={40}
+              className="h-auto"
             />
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full" 
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full"
               onClick={() => setSidebarOpen(false)}
             >
               <X size={18} />
@@ -37,14 +54,22 @@ export function MainLayout({ children }: MainLayoutProps) {
           <div className="flex flex-col h-full">
             <nav className="px-3 py-4 overflow-y-auto flex-1">
               <div className="space-y-2">
-                <SidebarItem href="/send" icon={<SendFileIcon size={18} />} className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg">
+                <SidebarItem
+                  href="/send"
+                  icon={<SendFileIcon size={18} />}
+                  className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg"
+                >
                   Send File
                 </SidebarItem>
-                <SidebarItem href="/receive" icon={<ReceiveFileIcon size={18} />} className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg">
+                <SidebarItem
+                  href="/receive"
+                  icon={<ReceiveFileIcon size={18} />}
+                  className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg"
+                >
                   Receive File
                 </SidebarItem>
-                <SidebarItem 
-                  href="/adrop" 
+                <SidebarItem
+                  href="/adrop"
                   icon={<ADropIcon size={18} />}
                   badge={<ComingSoonBadge />}
                   className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg"
@@ -53,14 +78,23 @@ export function MainLayout({ children }: MainLayoutProps) {
                 </SidebarItem>
               </div>
             </nav>
-            
+
             {/* Profile and Logout section - positioned higher */}
             <div className="px-3 py-4 mb-6">
               <div className="space-y-2">
-                <SidebarItem href="/profile" icon={<ProfileIcon size={18} />} className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg">
+                <SidebarItem
+                  href="/profile"
+                  icon={<ProfileIcon size={18} />}
+                  className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg"
+                >
                   Profile
                 </SidebarItem>
-                <SidebarItem href="#" icon={<LogoutIcon size={18} />} className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg">
+                <SidebarItem
+                  href="#"
+                  icon={<LogoutIcon size={18} />}
+                  className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg"
+                  onClick={handleLogout}
+                >
                   Logout
                 </SidebarItem>
               </div>
@@ -68,18 +102,26 @@ export function MainLayout({ children }: MainLayoutProps) {
           </div>
         </div>
       </div>
-      
+
       {/* Desktop sidebar */}
       <Sidebar className="w-56 hidden md:flex">
         <div className="space-y-2">
-          <SidebarItem href="/send" icon={<SendFileIcon size={18} />} className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg">
+          <SidebarItem
+            href="/send"
+            icon={<SendFileIcon size={18} />}
+            className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg"
+          >
             Send File
           </SidebarItem>
-          <SidebarItem href="/receive" icon={<ReceiveFileIcon size={18} />} className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg">
+          <SidebarItem
+            href="/receive"
+            icon={<ReceiveFileIcon size={18} />}
+            className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg"
+          >
             Receive File
           </SidebarItem>
-          <SidebarItem 
-            href="/adrop" 
+          <SidebarItem
+            href="/adrop"
             icon={<ADropIcon size={18} />}
             badge={<ComingSoonBadge />}
             className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg"
@@ -88,34 +130,45 @@ export function MainLayout({ children }: MainLayoutProps) {
           </SidebarItem>
         </div>
         <div className="mt-auto space-y-2">
-          <SidebarItem href="/profile" icon={<ProfileIcon size={18} />} className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg">
+          <SidebarItem
+            href="/profile"
+            icon={<ProfileIcon size={18} />}
+            className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg"
+          >
             Profile
           </SidebarItem>
-          <SidebarItem href="#" icon={<LogoutIcon size={18} />} className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg">
+          <SidebarItem
+            href="#"
+            icon={<LogoutIcon size={18} />}
+            className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg"
+            onClick={handleLogout}
+          >
             Logout
           </SidebarItem>
         </div>
       </Sidebar>
-      
+
       {/* Main content */}
       <main className="flex-1 overflow-auto">
         <div className="flex items-center p-3 border-b md:hidden">
-          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarOpen(true)}
+          >
             <Menu size={18} />
           </Button>
           <div className="ml-3">
-            <Image 
-              src="/Logo.png" 
-              alt="Aerofy Logo" 
-              width={100} 
-              height={30} 
-              className="h-auto" 
+            <Image
+              src="/Logo.png"
+              alt="Aerofy Logo"
+              width={100}
+              height={30}
+              className="h-auto"
             />
           </div>
         </div>
-        <div className="p-3 md:p-6">
-          {children}
-        </div>
+        <div className="p-3 md:p-6">{children}</div>
       </main>
     </div>
   );

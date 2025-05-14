@@ -1,10 +1,11 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   eslint: {
-    // Only run ESLint on these directories during builds
     dirs: ['src']
+  },
+  env: {
+    JWT_SECRET: process.env.JWT_SECRET
   }
 };
 
-export default nextConfig;
+module.exports = nextConfig;

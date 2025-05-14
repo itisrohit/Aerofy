@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
+import { toastSuccess, toastError } from "@/utility/toastStyle";
 import { Loader2, Check, User, Mail, Lock } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
@@ -62,7 +62,8 @@ export default function ProfilePage() {
         setUser(userData);
         setNewUsername(userData.username);
       } catch {
-        toast.error("Failed to load user data");
+        // Replace with custom toast
+        toastError("Failed to load user data");
       } finally {
         setIsLoading(false);
       }
@@ -75,7 +76,8 @@ export default function ProfilePage() {
     e.preventDefault();
     
     if (!newUsername.trim()) {
-      toast.error("Username cannot be empty");
+      // Replace with custom toast
+      toastError("Username cannot be empty");
       return;
     }
     
@@ -83,9 +85,11 @@ export default function ProfilePage() {
       setIsUpdatingUsername(true);
       await userService.updateUsername(newUsername);
       setUser(prev => prev ? { ...prev, username: newUsername } : null);
-      toast.success("Username updated successfully");
+      // Replace with custom toast
+      toastSuccess("Username updated successfully");
     } catch {
-      toast.error("Failed to update username");
+      // Replace with custom toast
+      toastError("Failed to update username");
     } finally {
       setIsUpdatingUsername(false);
     }
@@ -95,24 +99,28 @@ export default function ProfilePage() {
     e.preventDefault();
     
     if (!currentPassword || !newPassword || !confirmPassword) {
-      toast.error("All password fields are required");
+      // Replace with custom toast
+      toastError("All password fields are required");
       return;
     }
     
     if (newPassword !== confirmPassword) {
-      toast.error("New passwords do not match");
+      // Replace with custom toast
+      toastError("New passwords do not match");
       return;
     }
     
     try {
       setIsUpdatingPassword(true);
       await userService.updatePassword(currentPassword, newPassword);
-      toast.success("Password updated successfully");
+      // Replace with custom toast
+      toastSuccess("Password updated successfully");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch {
-      toast.error("Failed to update password");
+      // Replace with custom toast
+      toastError("Failed to update password");
     } finally {
       setIsUpdatingPassword(false);
     }

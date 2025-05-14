@@ -85,7 +85,6 @@ export const LandingPage = () => {
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100">
       {/* Enhanced background with subtle patterns and gradient */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03]" />
         <div 
           className="absolute inset-0 opacity-20" 
           style={{

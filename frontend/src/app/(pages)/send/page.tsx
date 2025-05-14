@@ -13,6 +13,8 @@ import {
   Mail,
   Lock,
 } from "lucide-react";
+// Add import for custom toast functions
+import { toastSuccess, toastError } from "@/utility/toastStyle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -41,7 +43,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Progress } from "@/components/ui/progress";
-import { Toaster } from "@/components/ui/sonner";
+// Keep this import for any custom toast calls
 import { toast } from "sonner";
 import {
   Dialog,
@@ -198,11 +200,8 @@ export default function SendPage() {
       setRecentFiles(response.files);
       setTotalFiles(response.total);
     } catch (error) {
-      toast.error("Failed to load recent files");
-      // or with title
-      toast("Error", {
-        description: "Failed to load recent files",
-      });
+      toastError("Failed to load recent files");
+      toastError("Failed to load recent files");
     } finally {
       setIsLoading(false);
     }
@@ -283,13 +282,7 @@ export default function SendPage() {
       setUploadProgress(100);
 
       // Show success message
-      toast.success(`Files shared with ${recipientEmail}`, {
-        style: {
-          color: "#000000",
-          backgroundColor: "#ffffff",
-          border: "1px solid #00aa00",
-        },
-      });
+      toastSuccess(`Files shared with ${recipientEmail}`);
 
       // Clear the form data
       setRecipientEmail("");
@@ -300,13 +293,8 @@ export default function SendPage() {
       // Refresh the recent files list
       await loadRecentFiles();
     } catch (error) {
-      toast.error("Upload Failed", {
-        description: "There was an error uploading your files",
-        style: {
-          color: "#000000", 
-          backgroundColor: "#ffffff",
-          border: "1px solid #ff0000",
-        },
+      toastError("Upload Failed", {
+        description: "There was an error uploading your files"
       });
     } finally {
       setIsUploading(false);
@@ -340,7 +328,6 @@ export default function SendPage() {
 
   return (
     <div className="container mx-auto p-4 space-y-6 w-full">
-      <Toaster />
       <div className="mb-8">
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-8 rounded-xl shadow-lg">
           <div className="flex items-center justify-between">

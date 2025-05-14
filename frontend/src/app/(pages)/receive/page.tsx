@@ -5,15 +5,14 @@ import {
   File,
   FileText,
   Download,
-  X,
   Loader2,
-  Search,
   Calendar,
   Lock,
   Mail,
   Check,
   Shield,
 } from "lucide-react";
+import { toastSuccess, toastError } from "@/utility/toastStyle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -41,8 +40,9 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Progress } from "@/components/ui/progress";
-import { Toaster } from "@/components/ui/sonner";
+// Remove Toaster import since it should only be in the root layout
+// import { Toaster } from "@/components/ui/sonner";
+// Keep toast import if needed for other functionality
 import { toast } from "sonner";
 import {
   Dialog,
@@ -233,7 +233,7 @@ export default function ReceivePage() {
       setRecentFiles(response.files);
       setTotalFiles(response.total);
     } catch (error) {
-      toast.error("Failed to load recent files");
+      toastError("Failed to load recent files");
     } finally {
       setIsLoading(false);
     }
@@ -245,7 +245,7 @@ export default function ReceivePage() {
       const pendingFiles = await fileService.getPendingFiles();
       setPendingFiles(pendingFiles);
     } catch (error) {
-      toast.error("Failed to load pending files");
+      toastError("Failed to load pending files");
     } finally {
       setLoadingPending(false);
     }
@@ -259,7 +259,7 @@ export default function ReceivePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!accessCode.trim() || !password.trim()) {
-      toast.error("Please enter both access code and password");
+      toastError("Please enter both access code and password");
       return;
     }
 
@@ -267,11 +267,11 @@ export default function ReceivePage() {
       setIsVerifying(true);
       const result = await fileService.accessFile(accessCode, password);
       setCurrentFile(result.file);
-      toast.success("File access granted");
+      toastSuccess("File access granted");
       setAccessCode("");
       setPassword("");
     } catch (error) {
-      toast.error("Access denied", {
+      toastError("Access denied", {
         description: "Invalid access code or password",
       });
     } finally {
@@ -306,9 +306,9 @@ export default function ReceivePage() {
       await new Promise((resolve) => setTimeout(resolve, 2000));
       stopProgress();
       setDownloadProgress(100);
-      toast.success("File downloaded successfully");
+      toastSuccess("File downloaded successfully");
     } catch (error) {
-      toast.error("Download failed", {
+      toastError("Download failed", {
         description: "There was an error downloading your file",
       });
     } finally {
@@ -322,7 +322,7 @@ export default function ReceivePage() {
   const handleAcceptFile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPendingFile || !acceptPassword) {
-      toast.error("Please enter password");
+      toastError("Please enter password");
       return;
     }
 
@@ -337,11 +337,11 @@ export default function ReceivePage() {
         prev.filter(file => file.id !== selectedPendingFile.id)
       );
       await loadRecentFiles();
-      toast.success("File accepted successfully");
+      toastSuccess("File accepted successfully");
       setShowAcceptDialog(false);
       setAcceptPassword("");
     } catch (error) {
-      toast.error("Could not accept file", {
+      toastError("Could not accept file", {
         description: "Invalid password"
       });
     } finally {
@@ -370,7 +370,6 @@ export default function ReceivePage() {
 
   return (
     <div className="container mx-auto p-4 space-y-6 w-full">
-      <Toaster />
       <div className="mb-8">
         <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-8 rounded-xl shadow-lg">
           <div className="flex items-center justify-between">
@@ -575,7 +574,7 @@ export default function ReceivePage() {
                           if (file.status === "available") {
                             handleDownload(file.id);
                           } else {
-                            toast.error("This file has expired and is no longer available");
+                            toastError("This file has expired and is no longer available");
                           }
                         }}
                         disabled={file.status !== "available" || isDownloading}
