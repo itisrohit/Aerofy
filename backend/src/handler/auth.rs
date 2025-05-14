@@ -24,9 +24,9 @@ fn create_auth_cookie(token: &str, maxage_minutes: Option<i64>) -> Cookie<'stati
     Cookie::build(("token", token.to_string()))
         .path("/")
         .max_age(duration)
-        // .secure(true) 
+        .secure(true) 
         .same_site(axum_extra::extract::cookie::SameSite::None)
-        // .http_only(true)
+        .http_only(true)
         .build()
 }
 
