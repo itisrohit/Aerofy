@@ -1,25 +1,26 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import {jwtVerify} from 'jose';
 
-const JWT_SECRET = process.env.JWT_SECRET;
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 export async function middleware(request: NextRequest) {
-     console.log("Cookies in request:", request.cookies.getAll());
     let isAuthenticated = false;
-    const authCookie = request.cookies.get('token');
-    console.log("Auth cookie found:", authCookie);
-    
-    if (authCookie?.value && authCookie.value !== 'undefined') {
-        try {
-            const secret = new TextEncoder().encode(JWT_SECRET);
-            await jwtVerify(authCookie.value, secret);
-            isAuthenticated = true;
-        } catch (error) {
-            console.error("JWT verification failed:", error);
-            isAuthenticated = false;
+   try {
+        
+        const response = await fetch(`${API_URL}/auth/verify`, {
+            headers: {
+                cookie: request.headers.get('cookie') || ''
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            isAuthenticated = data.verified === true;
         }
+    } catch (error) {
+        console.error("Auth verification failed:", error);
+        isAuthenticated = false;
     }
-    
     const protectedPaths = ['/send', '/receive', '/profile', '/adrop'];
     const authPaths = ['/auth'];
 
