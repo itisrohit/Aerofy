@@ -24,7 +24,7 @@ export const useAuth = () => {
 
     const redirectIfAuthenticated = useCallback((redirectPath = '/send') => {
         if (isAuthenticated && !loading) {
-            router.push(redirectPath)
+            router.replace(redirectPath)
             return false;
         }
         return true;
@@ -34,7 +34,7 @@ export const useAuth = () => {
         try {
             const success = await store.login(credentials);
             if ( success &&  store.isAuthenticated) {
-                router.push(redirectPath);
+                router.replace(redirectPath);
             }
             return success;
         } catch (error) {
@@ -46,7 +46,7 @@ export const useAuth = () => {
         try {
             const success = await store.register(credentials);
             if (success && store.isAuthenticated){
-                router.push(redirectPath);
+                router.replace(redirectPath);
             }
             return success;
         }catch (error) {
@@ -57,7 +57,7 @@ export const useAuth = () => {
 
     const logout = async (redirectPath='/auth') => {
         store.logout();
-        router.push(redirectPath);
+        router.replace(redirectPath);
     };
 
     return {
