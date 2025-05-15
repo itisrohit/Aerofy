@@ -1,4 +1,6 @@
-**Aerofy** is a secure file sharing backend built in Rust using the [Axum](https://docs.rs/axum/latest/axum/) web framework. It enables robust end-to-end encrypted file transfers, secure user authentication, and safe storage through hybrid cryptography (AES + RSA).
+**Aerofy** is a secure full-stack file sharing application with a Rust backend powered by the [Axum](https://docs.rs/axum/latest/axum/) web framework and a modern Next.js frontend. It enables robust end-to-end encrypted file transfers, secure user authentication, and safe storage using hybrid cryptography (AES + RSA).
+
+---
 
 ## 🚀 Features
 
@@ -8,6 +10,7 @@
 * 🧾 **File Management** (upload, retrieve, list)
 * ⏳ **Scheduled Auto-Cleanup of Expired Files**
 * 🔑 **Per-User RSA Key Management**
+* 🖥️ **Modern React Frontend** (Next.js with Tailwind CSS)
 
 ---
 
@@ -18,12 +21,15 @@
 * **Auth System**: JWT-based, password hashing with Argon2
 * **Encryption**: AES-256-GCM + RSA (2048-bit)
 * **Database**: PostgreSQL (via SQLx)
-* **REST API**: Well-structured endpoints
-* **Schedulers**: Cleanup of expired files via cron
+* **REST API**: Well-structured Axum endpoints
+* **Schedulers**: Expired file cleanup using cron jobs
+* **UI**: Responsive interface built with Next.js and `shadcn/ui`
 
 ---
 
 ## 📁 Project Structure
+
+### Backend
 
 ```
 backend/
@@ -51,6 +57,25 @@ backend/
 │       └── token.rs
 ```
 
+### Frontend
+
+```
+frontend/
+├── public/               # Static assets
+├── src/
+│   ├── app/              # App Router (Next.js 13+)
+│   │   ├── (auth)/       # Authentication views
+│   │   ├── (pages)/      # Main application pages
+│   │   │   ├── send/     # File sending functionality
+│   │   │   ├── receive/  # File receiving functionality
+│   │   │   └── adrop/    # Additional file sharing tools
+│   ├── components/       # Reusable UI components
+│   │   ├── ui/           # Base UI (buttons, inputs)
+│   │   └── layouts/      # Page layout components
+│   ├── lib/              # API and auth utilities
+│   └── utility/          # Misc helpers (formatting, etc.)
+```
+
 ---
 
 ## 📡 API Endpoints
@@ -65,12 +90,12 @@ backend/
 * `GET /api/users/me` – Get current user info
 * `PUT /api/users/name` – Update display name
 * `PUT /api/users/password` – Change password
-* `GET /api/users/search-emails` – Search by email
+* `GET /api/users/search-emails` – Search users by email
 
 ### 📁 File Operations
 
-* `POST /api/file/upload` – Encrypt and share a file
-* `POST /api/file/retrieve` – Decrypt and download shared file
+* `POST /api/file/upload` – Encrypt and upload a file
+* `POST /api/file/retrieve` – Decrypt and download file
 
 ### 🗂 File Listing
 
@@ -84,21 +109,20 @@ backend/
 ### Passwords
 
 * Hashed using **Argon2**
-* Maximum length enforced
+* Length-limited and validated
 * Constant-time comparison for verification
 
 ### File Encryption
 
-* AES-256-GCM for file contents
-* AES key encrypted using RSA (2048-bit)
-* Each user has a unique RSA key pair
-* Private keys securely stored server-side
+* **AES-256-GCM** for file contents
+* **RSA (2048-bit)** for encrypting AES key
+* Per-user key pairs stored securely
 
-### Auth
+### Authentication
 
-* JWT with configurable expiry
-* Support for cookie or bearer token
-* Middleware enforcement for protected routes
+* JWT-based auth with configurable expiry
+* Cookie and bearer token support
+* Middleware protection on secure routes
 
 ---
 
@@ -112,63 +136,73 @@ JWT_SECRET_KEY=your_jwt_secret_key
 JWT_MAXAGE=60
 ```
 
-### 🛢 Database
+### 🛢 Database Schema
 
-PostgreSQL with required tables:
+Ensure the following tables exist:
 
 * `users`
 * `files`
 * `shared_links`
 
-### 🧪 Running the Server
+### 🧪 Run the Server
 
 ```bash
+cd backend
 cargo run
 ```
 
-By default, the server listens on **`http://localhost:8080`**.
+Server runs at: **[http://localhost:8080](http://localhost:8080)**
+
+To run the frontend:
+
+```bash
+cd frontend
+pnpm install
+pnpm dev
+```
+
+Frontend runs at: **[http://localhost:3000](http://localhost:3000)**
 
 ---
 
 ## ⏰ Scheduled Tasks
 
-Aerofy includes hourly cron jobs to:
+Aerofy uses cron jobs (via `tokio-cron-scheduler`) to:
 
-* Remove **expired shared files**
-* Clean up **stale metadata**
-
-Managed using `tokio-cron-scheduler`.
+* Delete expired shared files
+* Clean up orphaned metadata regularly
 
 ---
 
 ## 🧯 Error Handling
 
-Robust error management with clear HTTP status codes for:
+Aerofy includes robust, centralized error handling for:
 
 * Auth failures
-* Database issues
 * Validation errors
-* File operation problems
+* File I/O problems
+* Database connectivity issues
 
 ---
 
-## 📦 Dependencies
+## 📦 Key Dependencies
 
 * [`axum`](https://crates.io/crates/axum) – Web framework
-* [`sqlx`](https://crates.io/crates/sqlx) – DB integration
+* [`sqlx`](https://crates.io/crates/sqlx) – PostgreSQL integration
 * [`tokio`](https://crates.io/crates/tokio) – Async runtime
-* [`rsa`](https://crates.io/crates/rsa) – RSA crypto
+* [`rsa`](https://crates.io/crates/rsa) – RSA encryption
 * [`argon2`](https://crates.io/crates/argon2) – Password hashing
-* [`chrono`](https://crates.io/crates/chrono) – Timestamps
-* [`uuid`](https://crates.io/crates/uuid) – UUIDs
+* [`chrono`](https://crates.io/crates/chrono) – Time handling
+* [`uuid`](https://crates.io/crates/uuid) – UUID generation
 * [`serde`](https://crates.io/crates/serde) – Serialization
 * [`validator`](https://crates.io/crates/validator) – Input validation
-* [`tokio-cron-scheduler`](https://crates.io/crates/tokio-cron-scheduler) – Scheduling
+* [`tokio-cron-scheduler`](https://crates.io/crates/tokio-cron-scheduler) – Cron jobs
+* [`Next.js`](https://nextjs.org/) – Frontend framework
+* [`shadcn/ui`](https://ui.shadcn.dev) – Styled components for UI
 
 ---
 
 ## 📬 Contributing
 
-We welcome contributions! Feel free to open issues, submit PRs, or suggest new features.
-
---
+We welcome contributions from the community!
+Feel free to open issues, submit pull requests, or suggest new features.
