@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use axum::{http::{header, HeaderMap}, response::IntoResponse, routing::post, Extension, Json, Router};
-use axum_extra::extract::cookie::Cookie;
+use axum::{extract::{Request}, http::{header, HeaderMap}, response::IntoResponse, routing::{post, get}, Extension, Json, Router};
+use axum_extra::extract::cookie::{Cookie, CookieJar};
 use validator::Validate;
 use serde::Serialize;
 
@@ -12,8 +12,8 @@ pub fn auth_handler() -> Router {
         .route("/register", post(register))
         .route("/login", post(login))
         .route("/logout", post(logout))
+        .route("/verify", get(verify_token))
 }
-
 
 fn create_auth_cookie(token: &str, maxage_minutes: Option<i64>) -> Cookie<'static> {
     let duration = match maxage_minutes {
@@ -136,4 +136,38 @@ pub async fn logout() -> Result<impl IntoResponse, HttpError> {
     });
     
     Ok(create_auth_response(response_data, cookie))
+}
+
+pub async fn verify_token(
+    cookie_jar: CookieJar,
+    Extension(app_state): Extension<Arc<AppState>>,
+    request: Request,
+) -> Result<impl IntoResponse, HttpError> {
+    let token = cookie_jar
+        .get("token")
+        .map(|cookie| cookie.value().to_string())
+        .or_else(|| {
+            request.headers()
+                .get(header::AUTHORIZATION)
+                .and_then(|auth_header| auth_header.to_str().ok())
+                .and_then(|auth_value| {
+                    if auth_value.starts_with("Bearer ") {
+                        Some(auth_value[7..].to_owned())
+                    } else {
+                        None
+                    }
+                })  
+        })
+        .ok_or_else(|| {
+            HttpError::unauthorized(ErrorMessage::TokenNotProvided.to_string())
+        })?;
+
+    let _token_details = token::decode_token(&token, app_state.env.jwt_secret.as_bytes())?;
+    let response_data = serde_json::json!({
+        "status": "success",
+        "verified": true,
+        "message": "Token is valid"
+    });
+    
+    Ok(Json(response_data))
 }
