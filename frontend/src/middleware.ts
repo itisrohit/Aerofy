@@ -10,9 +10,11 @@ export async function middleware(request: NextRequest) {
         const response = await fetch(`${API_URL}/auth/verify`, {
             headers: {
                 cookie: request.headers.get('cookie') || ''
-            }
+            },
+            credentials: 'include',
+            cache: 'no-store',
         });
-        
+        console.log("Auth verify status:", response.status);
         if (response.ok) {
             const data = await response.json();
             isAuthenticated = data.verified === true;
