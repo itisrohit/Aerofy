@@ -12,7 +12,7 @@ export async function middleware(request: NextRequest) {
                 cookie: request.headers.get('cookie') || ''
             }
         });
-        
+        console.log("cookieResponse", response)
         if (response.ok) {
             const data = await response.json();
             isAuthenticated = data.verified === true;
