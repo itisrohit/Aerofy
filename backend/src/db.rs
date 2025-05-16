@@ -80,18 +80,22 @@ pub trait UserExt {
         limit: usize
     ) -> Result<(Vec<SentFileDetails>, i64), sqlx::Error>;
 
-    async fn get_receive_files(
-        &self,
-        user_id: Uuid,
-        page: u32,
-        limit: usize
-    ) -> Result<(Vec<ReceiveFileDetails>, i64), sqlx::Error>;
-
     async fn delete_expired_files(
         &self
     ) -> Result<(), sqlx::Error>;
 
     async fn get_user_by_id(&self, user_id: Uuid) -> Result<Option<User>, sqlx::Error>;
+
+    // Add these new methods
+    
+    // For retrieved files only
+    async fn get_retrieved_files(&self, user_id: uuid::Uuid, page: u32, limit: u32) -> Result<(Vec<ReceiveFileDetails>, i64), sqlx::Error>;
+
+    // For pending files only
+    async fn get_pending_files(&self, user_id: uuid::Uuid, page: u32, limit: u32) -> Result<(Vec<ReceiveFileDetails>, i64), sqlx::Error>;
+
+    // Add a new method to mark a file as retrieved
+    async fn mark_file_as_retrieved(&self, shared_id: Uuid) -> Result<(), sqlx::Error>;
 }
 
 #[async_trait]
@@ -285,7 +289,7 @@ impl UserExt for DBClient {
         let shared_link = sqlx::query_as!(
             SharedLink,
             r#"
-            SELECT id, file_id, recipient_user_id, password, expiration_date, created_at
+            SELECT id, file_id, recipient_user_id, password, expiration_date, created_at, is_retrieved
             FROM shared_links
             WHERE id = $1
             AND recipient_user_id = $2
@@ -372,60 +376,6 @@ impl UserExt for DBClient {
         Ok((files, total_count))
     }
 
-    async fn get_receive_files(
-        &self,
-        user_id: Uuid,
-        page: u32,
-        limit: usize
-    ) -> Result<(Vec<ReceiveFileDetails>, i64), sqlx::Error> {
-        let offset = (page - 1) * limit as u32;
-
-        let files = sqlx::query_as!(
-            ReceiveFileDetails,
-            r#"
-                SELECT
-                    sl.id AS file_id,
-                    f.file_name,
-                    u.email AS sender_email,
-                    sl.expiration_date,
-                    sl.created_at
-                FROM 
-                    shared_links sl
-                JOIN 
-                    files f ON sl.file_id = f.id
-                JOIN 
-                    users u ON f.user_id = u.id
-                WHERE 
-                    sl.recipient_user_id = $1
-                ORDER BY 
-                    sl.created_at DESC 
-                LIMIT $2 
-                OFFSET $3
-            "#,
-            user_id,
-            limit as i64,
-            offset as i64,
-        )
-        .fetch_all(&self.pool)
-        .await?;
-
-        let count_row = sqlx::query_scalar!(
-            r#"
-                SELECT COUNT(*)
-                FROM shared_links sl
-                JOIN files f ON sl.file_id = f.id
-                WHERE sl.recipient_user_id = $1
-            "#,
-            user_id,
-        )
-        .fetch_one(&self.pool)
-        .await?;
-
-        let total_count = count_row.unwrap_or(0);
-
-        Ok((files, total_count))
-    }
-
     async fn delete_expired_files(
         &self
     ) -> Result<(), sqlx::Error> {
@@ -498,5 +448,111 @@ impl UserExt for DBClient {
         )
         .fetch_optional(&self.pool)
         .await
+    }
+
+    async fn get_retrieved_files(&self, user_id: uuid::Uuid, page: u32, limit: u32) -> Result<(Vec<ReceiveFileDetails>, i64), sqlx::Error> {
+        let offset = (page - 1) * limit;
+        
+        let files = sqlx::query_as!(
+            ReceiveFileDetails,
+            r#"
+            SELECT 
+                f.id AS file_id,
+                sl.id AS shared_id,
+                f.file_name,
+                u.email AS sender_email,
+                sl.expiration_date,
+                sl.created_at
+            FROM 
+                files f
+                JOIN shared_links sl ON f.id = sl.file_id
+                JOIN users u ON f.user_id = u.id
+            WHERE 
+                sl.recipient_user_id = $1 AND sl.is_retrieved = true
+            ORDER BY 
+                sl.created_at DESC
+            LIMIT $2 OFFSET $3
+            "#,
+            user_id,
+            limit as i64,
+            offset as i64
+        )
+        .fetch_all(&self.pool)
+        .await?;
+        
+        let total_count = sqlx::query_scalar!(
+            r#"
+            SELECT COUNT(*) 
+            FROM shared_links sl
+            WHERE sl.recipient_user_id = $1 AND sl.is_retrieved = true
+            "#,
+            user_id
+        )
+        .fetch_one(&self.pool)
+        .await?
+        .unwrap_or(0);
+        
+        Ok((files, total_count))
+    }
+
+    async fn get_pending_files(&self, user_id: uuid::Uuid, page: u32, limit: u32) -> Result<(Vec<ReceiveFileDetails>, i64), sqlx::Error> {
+        let offset = (page - 1) * limit;
+        
+        let files = sqlx::query_as!(
+            ReceiveFileDetails,
+            r#"
+            SELECT 
+                f.id AS file_id,
+                sl.id AS shared_id,  
+                f.file_name,
+                u.email AS sender_email,
+                sl.expiration_date,
+                sl.created_at
+            FROM 
+                files f
+                JOIN shared_links sl ON f.id = sl.file_id
+                JOIN users u ON f.user_id = u.id
+            WHERE 
+                sl.recipient_user_id = $1 AND (sl.is_retrieved = false OR sl.is_retrieved IS NULL)
+            ORDER BY 
+                sl.created_at DESC
+            LIMIT $2 OFFSET $3
+            "#,
+            user_id,
+            limit as i64,
+            offset as i64
+        )
+        .fetch_all(&self.pool)
+        .await?;
+        
+        let total_count = sqlx::query_scalar!(
+            r#"
+            SELECT COUNT(*) 
+            FROM shared_links sl
+            WHERE sl.recipient_user_id = $1 AND (sl.is_retrieved = false OR sl.is_retrieved IS NULL)
+            "#,
+            user_id
+        )
+        .fetch_one(&self.pool)
+        .await?
+        .unwrap_or(0);
+        
+        Ok((files, total_count))
+    }
+    
+    // Add a new method to mark a file as retrieved
+    async fn mark_file_as_retrieved(&self, shared_id: Uuid) -> Result<(), sqlx::Error> {
+        sqlx::query!(
+            r#"
+            UPDATE shared_links
+            SET is_retrieved = true
+            WHERE id = $1
+            "#,
+            shared_id
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
     }
 }

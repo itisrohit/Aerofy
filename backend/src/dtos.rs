@@ -117,6 +117,7 @@ pub struct UserSendFileListResponseDto {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserReceiveFileDto {
     pub file_id: String,
+    pub shared_id: String, // Add this new field
     pub file_name: String,
     pub sender_email: String,
     pub expiration_date: DateTime<Utc>,
@@ -127,6 +128,7 @@ impl UserReceiveFileDto {
     pub fn filter_receive_user_file(file_data: &ReceiveFileDetails) -> Self {
         UserReceiveFileDto {
             file_id: file_data.file_id.to_string(),
+            shared_id: file_data.shared_id.to_string(), // Add this new mapping
             file_name: file_data.file_name.to_owned(),
             sender_email: file_data.sender_email.to_owned(),
             expiration_date: file_data.expiration_date.unwrap(),
@@ -266,4 +268,11 @@ pub struct RetrieveFileDto {
         length(min = 6, message = "Password must be at least 6 characters")
     )]
     pub password: String,
+}
+
+
+#[derive(Validate, Debug, Default, Clone, Serialize, Deserialize)]
+pub struct DownloadFileDto {
+    #[validate(length(min = 1, message = "Shared id is required"))]
+    pub shared_id: String,
 }

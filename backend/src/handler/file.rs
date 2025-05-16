@@ -5,12 +5,13 @@ use chrono::{DateTime, Utc};
 use rsa::{pkcs1::{DecodeRsaPrivateKey, DecodeRsaPublicKey}, RsaPrivateKey, RsaPublicKey};
 use validator::Validate;
 
-use crate::{db::UserExt, dtos::{FileUploadDtos, Response as ResponseDto, RetrieveFileDto}, error::HttpError, middleware::JWTAuthMiddeware, utils::{decrypt::decrypt_file, encrypt::encrypt_file, password}, AppState};
+use crate::{db::UserExt, dtos::{FileUploadDtos, Response as ResponseDto, DownloadFileDto, RetrieveFileDto}, error::HttpError, middleware::JWTAuthMiddeware, utils::{decrypt::decrypt_file, encrypt::encrypt_file, password}, AppState};
 
 pub fn file_handle() -> Router {
     Router::new()
     .route("/upload", post(upload_file))
     .route("/retrieve", post(retrieve_file))
+    .route("/accept", post(accept_file))
 }
 
 pub async fn upload_file(
@@ -123,11 +124,8 @@ pub async fn upload_file(
 pub async fn retrieve_file(
     Extension(app_state): Extension<Arc<AppState>>,
     Extension(user): Extension<JWTAuthMiddeware>,
-    Json(body): Json<RetrieveFileDto>
+    Json(body): Json<DownloadFileDto>
 ) -> Result<impl IntoResponse, HttpError> {
-    // Validate the request body
-    body.validate().map_err(|e| HttpError::bad_request(e.to_string()))?;
-    
     // Parse the shared_id from string to UUID
     let shared_id = uuid::Uuid::parse_str(&body.shared_id)
         .map_err(|e| HttpError::bad_request(format!("Invalid shared ID: {}", e)))?;
@@ -142,15 +140,12 @@ pub async fn retrieve_file(
         .map_err(|e| HttpError::server_error(e.to_string()))?
         .ok_or_else(|| HttpError::bad_request("Shared link not found or has expired".to_string()))?;
     
-    // Verify the password
-    let is_valid = password::compare(&body.password, &shared_link.password)
-        .map_err(|e| HttpError::server_error(e.to_string()))?;
-    
-    if !is_valid {
-        return Err(HttpError::unauthorized("Invalid password".to_string()));
+    // Check if the file has been accepted/retrieved
+    if !shared_link.is_retrieved.unwrap_or(false) {
+        return Err(HttpError::bad_request("You must accept this file before downloading it".to_string()));
     }
     
-    // Get the file ID from the shared link
+    // Get the file ID from the shared link - no password check needed since file is already accepted
     let file_id = shared_link.file_id
         .ok_or_else(|| HttpError::server_error("File ID not found in shared link".to_string()))?;
     
@@ -181,18 +176,68 @@ pub async fn retrieve_file(
 
     let decrypted_file = decrypt_file(
         file_data.encrypted_aes_key, 
-        file_data.encrypted_file, 
-        file_data.iv, 
+        file_data.encrypted_file,
+        file_data.iv,
         &private_key_pem
     ).await?;
 
-    // Create the response
+    // Create the download response
     let response = Response::builder()
         .status(StatusCode::OK)
         .header("Content-Type", "application/octet-stream")
         .header("Content-Disposition", format!("attachment; filename=\"{}\"", file_data.file_name))
         .body(Body::from(decrypted_file))
         .map_err(|e| HttpError::server_error(e.to_string()))?;
-
+    
     Ok(response)
+}
+
+
+pub async fn accept_file(
+    Extension(app_state): Extension<Arc<AppState>>,
+    Extension(user): Extension<JWTAuthMiddeware>,
+    Json(body): Json<RetrieveFileDto>
+) -> Result<impl IntoResponse, HttpError> {
+    // Validate the request body
+    body.validate().map_err(|e| HttpError::bad_request(e.to_string()))?;
+    
+    // Parse the shared_id from string to UUID
+    let shared_id = uuid::Uuid::parse_str(&body.shared_id)
+        .map_err(|e| HttpError::bad_request(format!("Invalid shared ID: {}", e)))?;
+    
+    // Get the user's UUID
+    let user_id = user.user.id;
+    
+    // Get the shared link from the database
+    let shared_link = app_state.db_client
+        .get_shared(shared_id, user_id)
+        .await
+        .map_err(|e| HttpError::server_error(e.to_string()))?
+        .ok_or_else(|| HttpError::bad_request("Shared link not found or has expired".to_string()))?;
+    
+    if shared_link.is_retrieved.unwrap_or(false) {
+        return Err(HttpError::bad_request("This file has already been accepted".to_string()));
+    }
+    
+    // Verify the password
+    let is_valid = password::compare(&body.password, &shared_link.password)
+        .map_err(|e| HttpError::server_error(e.to_string()))?;
+    
+    if !is_valid {
+        return Err(HttpError::unauthorized("Invalid password".to_string()));
+    }
+    
+    // Mark the file as retrieved without downloading
+    app_state.db_client
+        .mark_file_as_retrieved(shared_id)
+        .await
+        .map_err(|e| HttpError::server_error(e.to_string()))?;
+    
+    // Create a success response
+    let response = ResponseDto {
+        message: "File accepted successfully".to_string(),
+        status: "success" 
+    };
+    
+    Ok(Json(response))
 }

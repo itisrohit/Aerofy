@@ -27,12 +27,13 @@ pub struct File {
 
 #[derive(Debug, Clone, Deserialize, Serialize, sqlx::FromRow, sqlx::Type)]
 pub struct SharedLink {
-    pub id: uuid::Uuid,
-    pub file_id: Option<uuid::Uuid>,
-    pub recipient_user_id: Option<uuid::Uuid>,
+    pub id: uuid::Uuid,  // Primary key should never be NULL
+    pub file_id: Option<uuid::Uuid>,  // Already correct
+    pub recipient_user_id: Option<uuid::Uuid>,  // Already correct
     pub password: String,
-    pub expiration_date: Option<DateTime<Utc>>,
-    pub created_at: Option<DateTime<Utc>>,
+    pub expiration_date: Option<DateTime<Utc>>,  // Already correct
+    pub created_at: Option<DateTime<Utc>>,       // Already correct
+    pub is_retrieved: Option<bool>,  // Make this optional too
 }
 
 #[derive(sqlx::FromRow)]
@@ -47,6 +48,7 @@ pub struct SentFileDetails {
 #[derive(sqlx::FromRow)]
 pub struct ReceiveFileDetails {
     pub file_id: uuid::Uuid,
+    pub shared_id: uuid::Uuid,  // Add this field
     pub file_name: String,
     pub sender_email: String,
     pub expiration_date: Option<DateTime<Utc>>,

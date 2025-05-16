@@ -35,5 +35,6 @@ CREATE TABLE shared_links (
     recipient_user_id UUID REFERENCES users(id) ON DELETE CASCADE, -- User receiving access (link removed if user is deleted)
     password VARCHAR(255) NOT NULL,                  -- Password protection for accessing the shared file
     expiration_date TIMESTAMP WITH TIME ZONE NOT NULL, -- When the shared link will expire
+    is_retrieved BOOLEAN NOT NULL DEFAULT FALSE,     -- Tracks if the file has been retrieved/accepted
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() -- When the file was shared
 );

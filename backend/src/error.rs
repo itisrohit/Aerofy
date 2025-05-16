@@ -59,6 +59,7 @@ pub struct HttpError {
 }
 
 impl HttpError {
+    #[allow(dead_code)]
     pub fn new(message: impl Into<String>, status: StatusCode) -> Self {
         HttpError {
             message: message.into(),
