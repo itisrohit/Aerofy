@@ -1,4 +1,6 @@
-**Aerofy** is a secure full-stack file sharing application with a Rust backend powered by the [Axum](https://docs.rs/axum/latest/axum/) web framework and a modern Next.js frontend. It enables robust end-to-end encrypted file transfers, secure user authentication, and safe storage using hybrid cryptography (AES + RSA).
+# Aerofy 
+
+A secure full-stack file sharing application with a **Rust backend** powered by the [Axum](https://docs.rs/axum/latest/axum/) web framework and a modern **Next.js frontend**. It enables robust **end-to-end encrypted file transfers**, secure user authentication, and safe storage using **hybrid cryptography (AES + RSA).**
 
 ---
 
@@ -29,51 +31,76 @@
 
 ## 📁 Project Structure
 
-### Backend
+### 🦀 Backend (Rust)
 
-```
+```bash
 backend/
 ├── src/
-│   ├── config.rs         # App configuration
-│   ├── db.rs             # Database integration
-│   ├── dtos.rs           # DTOs for API requests/responses
-│   ├── error.rs          # Centralized error handling
-│   ├── handler/          # API route handlers
-│   │   ├── auth.rs       # Auth logic
-│   │   ├── file.rs       # File upload/download
-│   │   ├── file_query.rs # Listing files
-│   │   ├── mod.rs
-│   │   └── user.rs       # User profile management
-│   ├── main.rs           # Entry point
-│   ├── middleware.rs     # Auth middleware
-│   ├── models.rs         # DB models
-│   ├── router.rs         # Route definitions
-│   └── utils/            # Utility modules
-│       ├── decrypt.rs
-│       ├── encrypt.rs
-│       ├── keys.rs
-│       ├── mod.rs
-│       ├── password.rs
-│       └── token.rs
+│   ├── config.rs         # Environment config loader
+│   ├── db.rs             # Database connection and setup
+│   ├── dtos.rs           # Request and response structs
+│   ├── error.rs          # Custom error handling logic
+│   ├── handler/          # API endpoint handlers
+│   │   ├── auth.rs       # Auth routes (login, register)
+│   │   ├── file.rs       # File upload/download routes
+│   │   ├── file_query.rs # File listing and metadata queries
+│   │   ├── mod.rs        # Module exports
+│   │   └── user.rs       # User profile routes
+│   ├── main.rs           # App entry point
+│   ├── middleware.rs     # Custom middleware (auth guard, logging)
+│   ├── models.rs         # Database models
+│   ├── router.rs         # Route definitions and grouping
+│   └── utils/            # Utility functions
+│       ├── decrypt.rs    # File decryption helpers
+│       ├── encrypt.rs    # File encryption helpers
+│       ├── keys.rs       # RSA key generation/storage
+│       ├── mod.rs        # Utility exports
+│       ├── password.rs   # Password hashing and verification
+│       └── token.rs      # JWT generation and validation
 ```
 
-### Frontend
+---
 
-```
+### ⚛️ Frontend (Next.js)
+
+```bash
 frontend/
-├── public/               # Static assets
-├── src/
-│   ├── app/              # App Router (Next.js 13+)
-│   │   ├── (auth)/       # Authentication views
-│   │   ├── (pages)/      # Main application pages
-│   │   │   ├── send/     # File sending functionality
-│   │   │   ├── receive/  # File receiving functionality
-│   │   │   └── adrop/    # Additional file sharing tools
-│   ├── components/       # Reusable UI components
-│   │   ├── ui/           # Base UI (buttons, inputs)
-│   │   └── layouts/      # Page layout components
-│   ├── lib/              # API and auth utilities
-│   └── utility/          # Misc helpers (formatting, etc.)
+├── .env.local             # Frontend-specific env vars (API URL, etc.)
+├── next.config.ts         # Next.js configuration (e.g. rewrites)
+├── package.json           # Project dependencies and scripts
+├── tsconfig.json          # TypeScript config
+├── public/                # Static files served as-is
+│   └── Logo.png           # App logo
+└── src/
+    ├── app/               # App directory (Next.js 13+ routing)
+    │   ├── (auth)/        # Layout wrapper for auth pages
+    │   │   └── auth/      # Login and register page routes
+    │   ├── (pages)/       # Main user-facing routes
+    │   │   ├── send/      # Upload/send files
+    │   │   ├── receive/   # View/download received files
+    │   │   ├── profile/   # User profile and settings
+    │   │   └── adrop/     # Comming soon page
+    │   ├── globals.css    # Global styles and Tailwind base
+    │   ├── layout.tsx     # App-wide layout (navbar, sidebar)
+    │   └── page.tsx       # Landing/home page
+    ├── components/        # Reusable UI components
+    │   ├── ui/            # shadcn/ui components (e.g., buttons, modals)
+    │   ├── layouts/       # Layout components for different views
+    │   │   └── main-layout.tsx  # Common layout with navigation
+    │   ├── sidebar.tsx    # Sidebar navigation UI
+    │   └── landingpage.tsx # Landing page hero and features
+    ├── hooks/             # Custom React hooks
+    │   ├── useAuth.ts     # Auth context & logic
+    │   └── useReceive.ts  # Receiving file logic
+    ├── store/             # Global state management (Zustand)
+    │   ├── authStore.ts   # User session state
+    │   ├── sendStore.ts   # File sending state
+    │   └── receiveStore.ts# File receiving state
+    ├── lib/               # Shared libraries/utilities
+    │   └── utils.ts       # Shared helper functions
+    ├── types/             # Global TS types/interfaces
+    └── utility/           # Utility and style-related helpers
+        └── toastStyle.ts  # Custom toast styling
 ```
 
 ---
@@ -84,23 +111,27 @@ frontend/
 
 * `POST /api/auth/register` – Register a new user
 * `POST /api/auth/login` – Authenticate and receive JWT
+* `GET /api/auth/logout` – Log out the current user
+* `GET /api/auth/verifytoken` – Verify if the JWT is valid
 
 ### 👤 User Management
 
-* `GET /api/users/me` – Get current user info
+* `GET /api/users/me` – Get user info
 * `PUT /api/users/name` – Update display name
 * `PUT /api/users/password` – Change password
 * `GET /api/users/search-emails` – Search users by email
 
 ### 📁 File Operations
 
-* `POST /api/file/upload` – Encrypt and upload a file
-* `POST /api/file/retrieve` – Decrypt and download file
+* `POST /api/file/upload` – Encrypt & upload a file
+* `POST /api/file/retrieve` – Decrypt & download file
+* `POST /api/file/accept` – Accept a shared file
 
 ### 🗂 File Listing
 
-* `GET /api/list/sent` – List sent files
-* `GET /api/list/received` – List received files
+* `GET /api/list/send` – List sent files
+* `GET /api/list/receive` – List received files
+* `GET /api/list/pendingreceive` – List files awaiting acceptance
 
 ---
 
@@ -109,20 +140,20 @@ frontend/
 ### Passwords
 
 * Hashed using **Argon2**
-* Length-limited and validated
+* Enforced length & strength rules
 * Constant-time comparison for verification
 
 ### File Encryption
 
-* **AES-256-GCM** for file contents
-* **RSA (2048-bit)** for encrypting AES key
-* Per-user key pairs stored securely
+* **AES-256-GCM**: Symmetric encryption for file contents
+* **RSA-2048**: Used to encrypt the AES keys
+* Per-user keypairs securely stored
 
 ### Authentication
 
-* JWT-based auth with configurable expiry
-* Cookie and bearer token support
-* Middleware protection on secure routes
+* **JWT-based** with expiry settings
+* Supports **Bearer tokens** and **HTTP-only cookies**
+* Middleware protected routes (auth guards)
 
 ---
 
@@ -138,71 +169,74 @@ JWT_MAXAGE=60
 
 ### 🛢 Database Schema
 
-Ensure the following tables exist:
+Ensure tables exist:
 
 * `users`
 * `files`
 * `shared_links`
 
-### 🧪 Run the Server
+---
+
+## 🧪 Run the App
+
+### Backend:
 
 ```bash
 cd backend
 cargo run
 ```
 
-Server runs at: **[http://localhost:8080](http://localhost:8080)**
+Runs at **[http://localhost:8080](http://localhost:8080)**
 
-To run the frontend:
+### Frontend:
 
 ```bash
 cd frontend
-pnpm install
-pnpm dev
+npm install
+npm dev
 ```
 
-Frontend runs at: **[http://localhost:3000](http://localhost:3000)**
+Runs at **[http://localhost:3000](http://localhost:3000)**
 
 ---
 
 ## ⏰ Scheduled Tasks
 
-Aerofy uses cron jobs (via `tokio-cron-scheduler`) to:
+Uses [`tokio-cron-scheduler`](https://crates.io/crates/tokio-cron-scheduler) for:
 
-* Delete expired shared files
-* Clean up orphaned metadata regularly
+* Cleaning expired file shares
+* Removing orphaned file records
 
 ---
 
 ## 🧯 Error Handling
 
-Aerofy includes robust, centralized error handling for:
+Handled centrally for:
 
-* Auth failures
-* Validation errors
-* File I/O problems
-* Database connectivity issues
+* Auth issues
+* Input validation
+* I/O and upload errors
+* DB failures
 
 ---
 
 ## 📦 Key Dependencies
 
-* [`axum`](https://crates.io/crates/axum) – Web framework
-* [`sqlx`](https://crates.io/crates/sqlx) – PostgreSQL integration
+* [`axum`](https://crates.io/crates/axum) – Web server
+* [`sqlx`](https://crates.io/crates/sqlx) – PostgreSQL support
 * [`tokio`](https://crates.io/crates/tokio) – Async runtime
-* [`rsa`](https://crates.io/crates/rsa) – RSA encryption
+* [`rsa`](https://crates.io/crates/rsa) – RSA crypto
 * [`argon2`](https://crates.io/crates/argon2) – Password hashing
-* [`chrono`](https://crates.io/crates/chrono) – Time handling
-* [`uuid`](https://crates.io/crates/uuid) – UUID generation
-* [`serde`](https://crates.io/crates/serde) – Serialization
+* [`chrono`](https://crates.io/crates/chrono) – Timestamps
+* [`uuid`](https://crates.io/crates/uuid) – Unique IDs
 * [`validator`](https://crates.io/crates/validator) – Input validation
-* [`tokio-cron-scheduler`](https://crates.io/crates/tokio-cron-scheduler) – Cron jobs
-* [`Next.js`](https://nextjs.org/) – Frontend framework
-* [`shadcn/ui`](https://ui.shadcn.dev) – Styled components for UI
+* [`serde`](https://crates.io/crates/serde) – JSON (de)serialization
+* [`Next.js`](https://nextjs.org) – Frontend framework
+* [`shadcn/ui`](https://ui.shadcn.dev) – Prebuilt styled components
 
 ---
 
 ## 📬 Contributing
 
 We welcome contributions from the community!
-Feel free to open issues, submit pull requests, or suggest new features.
+Open issues, submit PRs, or suggest features.
