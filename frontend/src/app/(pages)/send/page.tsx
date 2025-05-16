@@ -43,8 +43,6 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Progress } from "@/components/ui/progress";
-// Keep this import for any custom toast calls
-import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -60,156 +58,37 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { format } from "date-fns";
+import { useSend, SendFormData } from "@/hooks/useSend";
 
 const ITEMS_PER_PAGE = 5;
 
-// API service for file operations - replace with your actual API calls
-const fileService = {
-  uploadFiles: async (files: File[]): Promise<any> => {
-    // Create FormData to send files
-    const formData = new FormData();
-    files.forEach((file, index) => {
-      formData.append(`file-${index}`, file);
-    });
-
-    // Example API call - replace with your actual endpoint
-    try {
-      // Simulated API call with 2-second delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      return { success: true, message: "Files uploaded successfully" };
-    } catch (error) {
-      console.error("File upload failed:", error);
-      throw new Error("Failed to upload files");
-    }
-  },
-
-  getRecentFiles: async (
-    page: number = 1,
-    limit: number = ITEMS_PER_PAGE
-  ): Promise<any> => {
-    // Example API call - replace with your actual endpoint
-    try {
-      // Simulating API call with mock data
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // This is mock data - replace with actual API call to your backend
-      const mockFiles = [
-        {
-          id: 1,
-          name: "presentation.pdf",
-          size: "2.4 MB",
-          date: "2023-06-12",
-          status: "sent",
-        },
-        {
-          id: 2,
-          name: "document.docx",
-          size: "1.8 MB",
-          date: "2023-06-10",
-          status: "sent",
-        },
-        {
-          id: 3,
-          name: "image.jpg",
-          size: "4.2 MB",
-          date: "2023-06-08",
-          status: "failed",
-        },
-        {
-          id: 4,
-          name: "spreadsheet.xlsx",
-          size: "3.1 MB",
-          date: "2023-06-05",
-          status: "sent",
-        },
-        {
-          id: 5,
-          name: "research-paper.pdf",
-          size: "5.7 MB",
-          date: "2023-06-01",
-          status: "sent",
-        },
-        {
-          id: 6,
-          name: "notes.txt",
-          size: "0.2 MB",
-          date: "2023-05-28",
-          status: "sent",
-        },
-        {
-          id: 7,
-          name: "video.mp4",
-          size: "15.3 MB",
-          date: "2023-05-25",
-          status: "failed",
-        },
-        {
-          id: 8,
-          name: "backup.zip",
-          size: "23.1 MB",
-          date: "2023-05-22",
-          status: "sent",
-        },
-      ];
-
-      const startIndex = (page - 1) * limit;
-      const paginatedFiles = mockFiles.slice(startIndex, startIndex + limit);
-
-      return {
-        files: paginatedFiles,
-        total: mockFiles.length,
-        page,
-        limit,
-      };
-    } catch (error) {
-      console.error("Failed to fetch recent files:", error);
-      throw new Error("Failed to load recent files");
-    }
-  },
-};
-
 export default function SendPage() {
+  const {
+    isUploading,
+    progress,
+    error,
+    recentFiles,
+    totalFiles,
+    currentPage,
+    formSubmitAttempted,
+    totalPages,
+    startIndex,
+    isValidatingEmail,
+    handleSendFiles,
+    resetForm,
+    handlePageChange,
+    validateEmail
+  } = useSend(ITEMS_PER_PAGE);
+
   const [files, setFiles] = useState<File[]>([]);
-  const [uploadProgress, setUploadProgress] = useState<number>(0);
-  const [isUploading, setIsUploading] = useState<boolean>(false);
-  const [recentFiles, setRecentFiles] = useState<any[]>([]);
-  const [totalFiles, setTotalFiles] = useState<number>(0);
-  const [currentPage, setCurrentPage] = useState<number>(1);
   const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showShareDialog, setShowShareDialog] = useState<boolean>(false);
   const [recipientEmail, setRecipientEmail] = useState<string>("");
   const [filePassword, setFilePassword] = useState<string>("");
   const [expiryDate, setExpiryDate] = useState<Date | undefined>(undefined);
-  const [formSubmitAttempted, setFormSubmitAttempted] = useState<boolean>(false);
   const [calendarOpen, setCalendarOpen] = useState<boolean>(false);
-
-  const totalPages = Math.ceil(totalFiles / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-
-
-  const resetFormState = () => {
-    setFormSubmitAttempted(false);
-  };
-
-  // Load recent files from backend
-  const loadRecentFiles = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const response = await fileService.getRecentFiles(currentPage);
-      setRecentFiles(response.files);
-      setTotalFiles(response.total);
-    } catch (error) {
-      toastError("Failed to load recent files");
-      toastError("Failed to load recent files");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [currentPage]);
-
-  useEffect(() => {
-    loadRecentFiles();
-  }, [loadRecentFiles]);
+  const [emailValidationResult, setEmailValidationResult] = useState<{isValid: boolean, message?: string} | null>(null);
+  const [isValidatingEmailUI, setIsValidatingEmailUI] = useState<boolean>(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -240,71 +119,53 @@ export default function SendPage() {
     setFiles(files.filter((_, i) => i !== index));
   };
 
-  const simulateProgress = () => {
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.random() * 10;
-      if (progress >= 100) {
-        progress = 100;
-        clearInterval(interval);
-      }
-      setUploadProgress(Math.min(progress, 95)); // Cap at 95% until backend confirms
-    }, 300);
-
-    return () => clearInterval(interval);
-  };
-
-  const handleSend = async () => {
-    setFormSubmitAttempted(true);
-
-    if (!recipientEmail || !filePassword || !expiryDate) {
-      return; // Don't proceed if validation fails
-    }
-
-    if (files.length === 0) return;
-
-    setShowShareDialog(false);
-
-    try {
-      setIsUploading(true);
-      setUploadProgress(0);
-
-      // Simulate progress updates
-      const stopProgress = simulateProgress();
-
-      // In a real implementation, you would include the recipient details
-      console.log("Sending to:", recipientEmail);
-      console.log("Password protected:", filePassword);
-      console.log("Expires on:", expiryDate);
-
-      // Complete the progress
-      stopProgress();
-      setUploadProgress(100);
-
-      // Show success message
-      toastSuccess(`Files shared with ${recipientEmail}`);
-
-      // Clear the form data
-      setRecipientEmail("");
-      setFilePassword("");
-      setExpiryDate(undefined);
-      setFiles([]);
-
-      // Refresh the recent files list
-      await loadRecentFiles();
-    } catch (error) {
-      toastError("Upload Failed", {
-        description: "There was an error uploading your files"
-      });
-    } finally {
-      setIsUploading(false);
-      setTimeout(() => setUploadProgress(0), 1000); // Reset progress after a delay
+  // Email validation on blur
+  const handleEmailBlur = async () => {
+    if (recipientEmail) {
+      setIsValidatingEmailUI(true);
+      const result = await validateEmail(recipientEmail);
+      setEmailValidationResult(result);
+      setIsValidatingEmailUI(false);
+    } else {
+      setEmailValidationResult(null);
     }
   };
 
   const handleDateSelect = (date: Date | undefined) => {
     setExpiryDate(date);
     setCalendarOpen(false);
+  };
+
+  const handleSend = async () => {
+    const formData: SendFormData = {
+      files,
+      recipientEmail,
+      password: filePassword,
+      expiryDate: expiryDate as Date,
+    };
+
+    const success = await handleSendFiles(formData);
+
+    if (success) {
+      setShowShareDialog(false);
+      toastSuccess(`Files shared with ${recipientEmail}`);
+      
+      // Reset form state
+      setFiles([]);
+      setRecipientEmail("");
+      setFilePassword("");
+      setExpiryDate(undefined);
+      setEmailValidationResult(null);
+    } else if (error) {
+      toastError("Upload Failed", {
+        description: error || "There was an error uploading your files"
+      });
+    }
+  };
+
+  const resetFormState = () => {
+    resetForm();
+    setEmailValidationResult(null);
   };
 
   const getFileTypeIcon = (filename: string) => {
@@ -443,9 +304,9 @@ export default function SendPage() {
             <div className="mt-6">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm font-medium">Sending...</span>
-                <span className="text-sm">{Math.round(uploadProgress)}%</span>
+                <span className="text-sm">{Math.round(progress)}%</span>
               </div>
-              <Progress value={uploadProgress} className="h-2" />
+              <Progress value={progress} className="h-2" />
             </div>
           )}
         </CardContent>
@@ -487,17 +348,45 @@ export default function SendPage() {
             <div className="grid grid-cols-4 items-center gap-4">
               <Mail className="h-4 w-4 text-muted-foreground" />
               <div className="col-span-3">
-                <Input
-                  id="recipient"
-                  placeholder="Recipient email *"
-                  className="w-full"
-                  value={recipientEmail}
-                  onChange={(e) => setRecipientEmail(e.target.value)}
-                  required
-                />
-                {formSubmitAttempted && !recipientEmail && (
+                <div className="relative">
+                  <Input
+                    id="recipient"
+                    placeholder="Recipient email *"
+                    className={`w-full ${
+                      formSubmitAttempted && !recipientEmail 
+                        ? "border-red-300 focus:border-red-300" 
+                        : emailValidationResult && !emailValidationResult.isValid
+                        ? "border-red-300 focus:border-red-300"
+                        : emailValidationResult && emailValidationResult.isValid
+                        ? "border-green-300 focus:border-green-300"
+                        : ""
+                    }`}
+                    value={recipientEmail}
+                    onChange={(e) => setRecipientEmail(e.target.value)}
+                    onBlur={handleEmailBlur}
+                    required
+                  />
+                  {isValidatingEmailUI && (
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
+                  {!isValidatingEmailUI && emailValidationResult && emailValidationResult.isValid && (
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                      <Check className="h-4 w-4 text-green-500" />
+                    </div>
+                  )}
+                  {!isValidatingEmailUI && emailValidationResult && !emailValidationResult.isValid && (
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                      <X className="h-4 w-4 text-red-500" />
+                    </div>
+                  )}
+                </div>
+                {formSubmitAttempted && !recipientEmail ? (
                   <p className="text-xs text-red-500 mt-1">Email is required</p>
-                )}
+                ) : emailValidationResult && !emailValidationResult.isValid ? (
+                  <p className="text-xs text-red-500 mt-1">{emailValidationResult.message}</p>
+                ) : null}
               </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -507,7 +396,7 @@ export default function SendPage() {
                   id="password"
                   type="password"
                   placeholder="Password *"
-                  className="w-full"
+                  className={`w-full ${formSubmitAttempted && !filePassword ? "border-red-300" : ""}`}
                   value={filePassword}
                   onChange={(e) => setFilePassword(e.target.value)}
                   required
@@ -525,7 +414,7 @@ export default function SendPage() {
                     <Button
                       variant="outline"
                       className={`w-full justify-start text-left font-normal ${
-                        formSubmitAttempted && !expiryDate ? "border-red-200" : ""
+                        formSubmitAttempted && !expiryDate ? "border-red-300" : ""
                       }`}
                     >
                       {expiryDate ? format(expiryDate, "PPP") : "Set expiration date *"}
@@ -557,8 +446,14 @@ export default function SendPage() {
             >
               Cancel
             </Button>
-            <Button onClick={handleSend}>
-              Send File
+            <Button onClick={handleSend} disabled={isUploading || isValidatingEmail}>
+              {isUploading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...
+                </>
+              ) : (
+                "Send File"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -571,7 +466,7 @@ export default function SendPage() {
           <CardDescription>View your file transfer history</CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {isUploading ? (
             <div className="flex justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
@@ -580,42 +475,42 @@ export default function SendPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>File</TableHead>
-                  <TableHead>Size</TableHead>
+                  <TableHead>Recipient</TableHead>
                   <TableHead>Date</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Expires</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {recentFiles.map((file) => (
-                  <TableRow key={file.id}>
+                  <TableRow key={file.file_id}>
                     <TableCell>
                       <div className="flex items-center">
                         <div className="p-2 bg-muted rounded mr-3">
-                          {getFileTypeIcon(file.name)}
+                          {getFileTypeIcon(file.file_name)}
                         </div>
-                        <span>{file.name}</span>
+                        <span>{file.file_name}</span>
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {file.size}
+                      {file.recipient_email}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {file.date}
+                      {new Date(file.created_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
-                      {file.status === "sent" ? (
+                      {new Date(file.expiration_date) > new Date() ? (
                         <Badge
                           variant="outline"
                           className="bg-green-50 text-green-700 border-green-200"
                         >
-                          <Check size={12} className="mr-1" /> Sent
+                          {new Date(file.expiration_date).toLocaleDateString()}
                         </Badge>
                       ) : (
                         <Badge
                           variant="outline"
                           className="bg-red-50 text-red-700 border-red-200"
                         >
-                          <X size={12} className="mr-1" /> Failed
+                          Expired
                         </Badge>
                       )}
                     </TableCell>
@@ -640,12 +535,8 @@ export default function SendPage() {
               <PaginationContent>
                 <PaginationItem>
                   <PaginationPrevious
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.max(prev - 1, 1))
-                    }
-                    className={
-                      currentPage === 1 ? "pointer-events-none opacity-50" : ""
-                    }
+                    onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
+                    className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
                   />
                 </PaginationItem>
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(
@@ -653,7 +544,7 @@ export default function SendPage() {
                     <PaginationItem key={page}>
                       <PaginationLink
                         isActive={page === currentPage}
-                        onClick={() => setCurrentPage(page)}
+                        onClick={() => handlePageChange(page)}
                       >
                         {page}
                       </PaginationLink>
@@ -662,14 +553,8 @@ export default function SendPage() {
                 )}
                 <PaginationItem>
                   <PaginationNext
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                    }
-                    className={
-                      currentPage === totalPages
-                        ? "pointer-events-none opacity-50"
-                        : ""
-                    }
+                    onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
+                    className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
                   />
                 </PaginationItem>
               </PaginationContent>
