@@ -188,7 +188,7 @@ export const LandingPage = () => {
                 size="lg" 
                 className="text-base font-medium px-8 py-7 border-slate-300 hover:border-slate-400 text-slate-700 hover:bg-white/50 rounded-full shadow-sm hover:shadow-md transition-all duration-300"
               >
-                <Link href="#how-it-works">
+                <Link href="how-it-works">
                   Learn More
                 </Link>
               </Button>
