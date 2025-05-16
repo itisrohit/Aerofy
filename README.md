@@ -232,7 +232,7 @@ Handled centrally for:
 * [`validator`](https://crates.io/crates/validator) – Input validation
 * [`serde`](https://crates.io/crates/serde) – JSON (de)serialization
 * [`Next.js`](https://nextjs.org) – Frontend framework
-* [`shadcn/ui`](https://ui.shadcn.dev) – Prebuilt styled components
+* [`shadcn/ui`](https://ui.shadcn.com) – Prebuilt styled components
 
 ---
 
