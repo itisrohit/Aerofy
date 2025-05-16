@@ -79,5 +79,9 @@ export const useAuth = () => {
 
     // Additional operations
     verifyAuth: store.verifyAuth,
+    
+    // Profile operations
+    updateName: store.updateName,
+    updatePassword: store.updatePassword,
   };
 };

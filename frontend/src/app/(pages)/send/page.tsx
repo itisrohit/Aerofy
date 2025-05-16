@@ -90,9 +90,27 @@ export default function SendPage() {
   const [emailValidationResult, setEmailValidationResult] = useState<{isValid: boolean, message?: string} | null>(null);
   const [isValidatingEmailUI, setIsValidatingEmailUI] = useState<boolean>(false);
 
+  const validateFile = (file: File): boolean => {
+    if (file.size > 4 * 1024 * 1024) {
+      toastError(`${file.name} exceeds the 4MB limit`);
+      return false;
+    }
+    
+    const fileType = file.type.toLowerCase();
+    const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/bmp', 'image/webp', 'image/svg+xml'];
+    
+    if (!validTypes.includes(fileType)) {
+      toastError(`${file.name} is not a valid file type. Only images and PDFs are allowed`);
+      return false;
+    }
+    
+    return true;
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setFiles(Array.from(e.target.files));
+      const validFiles: File[] = Array.from(e.target.files).filter(file => validateFile(file));
+      setFiles(validFiles);
     }
   };
 
@@ -101,7 +119,8 @@ export default function SendPage() {
     setIsDragging(false);
 
     if (e.dataTransfer.files) {
-      setFiles(Array.from(e.dataTransfer.files));
+      const validFiles: File[] = Array.from(e.dataTransfer.files).filter(file => validateFile(file));
+      setFiles(validFiles);
     }
   };
 
@@ -255,11 +274,12 @@ export default function SendPage() {
                   className="hidden"
                   onChange={handleFileChange}
                   disabled={isUploading}
+                  accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.webp,.svg"
                 />
               </label>
             </div>
             <p className="mt-2 text-xs text-gray-500">
-              Supported file types: PDF, DOC, DOCX, JPG, PNG, etc.
+              Only images and PDFs up to 4 MB allowed
             </p>
           </div>
 

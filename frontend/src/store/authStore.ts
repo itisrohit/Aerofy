@@ -6,6 +6,9 @@ interface User {
     id: string;
     name: string;
     email: string;
+    public_key?: string;
+    created_at?: string;
+    updated_at?: string;
 }
 
 interface AuthState {
@@ -20,6 +23,10 @@ interface AuthState {
     logout: () => void;
     clearError: () => void;
     verifyAuth: () => Promise<boolean>;
+    
+    // New methods for profile page
+    updateName: (name: string) => Promise<boolean>;
+    updatePassword: (oldPassword: string, newPassword: string, newPasswordConfirm: string) => Promise<boolean>;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
@@ -108,7 +115,7 @@ export const useAuthStore = create(
                         const userResponse = await api.get(`/users/me`);
                         
                         set({
-                            user: userResponse.data.user,
+                            user: userResponse.data.data.user,
                             isAuthenticated: true,
                             loading: false,
                         });
@@ -117,6 +124,50 @@ export const useAuthStore = create(
                         set({ 
                             user: null,
                             isAuthenticated: false,
+                            loading: false 
+                        });
+                        return false;
+                    }
+                },
+                
+                
+                updateName: async (name: string) => {
+                    try {
+                        set({ loading: true, error: null });
+                        await api.put('/users/name', { name });
+                        
+                        const currentUser = get().user;
+                        if (currentUser) {
+                            set({ 
+                                user: { ...currentUser, name },
+                                loading: false
+                            });
+                        }
+                        
+                        return true;
+                    } catch (error) {
+                        set({ 
+                            error: (error as any).response?.data?.message || 'Failed to update name',
+                            loading: false 
+                        });
+                        return false;
+                    }
+                },
+                
+                updatePassword: async (old_password: string, new_password: string, new_password_confirm: string) => {
+                    try {
+                        set({ loading: true, error: null });
+                        await api.put('/users/password', { 
+                            old_password, 
+                            new_password, 
+                            new_password_confirm 
+                        });
+                        
+                        set({ loading: false });
+                        return true;
+                    } catch (error) {
+                        set({ 
+                            error: (error as any).response?.data?.message || 'Failed to update password',
                             loading: false 
                         });
                         return false;

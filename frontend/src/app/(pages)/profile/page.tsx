@@ -15,37 +15,14 @@ import { Label } from "@/components/ui/label";
 import { toastSuccess, toastError } from "@/utility/toastStyle";
 import { Loader2, Check, User, Mail, Lock } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-
-// Mock user service - replace with your actual API calls
-const userService = {
-  getCurrentUser: async () => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    return {
-      username: "JohnDoe123",
-      email: "john.doe@example.com",
-    };
-  },
-  updateUsername: async (username: string) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    return { success: true };
-  },
-  updatePassword: async (currentPassword: string, newPassword: string) => {
-    // Simulate API call 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    return { success: true };
-  },
-};
+import { useAuth } from "@/hooks/useAuth";
 
 export default function ProfilePage() {
-  // User information
-  const [user, setUser] = useState<{ username: string; email: string } | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const { user, loading: authLoading, error, updateName, updatePassword } = useAuth();
   
-  // Username update
-  const [newUsername, setNewUsername] = useState<string>("");
-  const [isUpdatingUsername, setIsUpdatingUsername] = useState<boolean>(false);
+  // Name update
+  const [newName, setNewName] = useState<string>("");
+  const [isUpdatingName, setIsUpdatingName] = useState<boolean>(false);
   
   // Password update
   const [currentPassword, setCurrentPassword] = useState<string>("");
@@ -53,45 +30,39 @@ export default function ProfilePage() {
   const [confirmPassword, setConfirmPassword] = useState<string>("");
   const [isUpdatingPassword, setIsUpdatingPassword] = useState<boolean>(false);
 
-  // Fetch user data on component mount
+  // Set initial name when user data loads
   useEffect(() => {
-    const loadUserData = async () => {
-      try {
-        setIsLoading(true);
-        const userData = await userService.getCurrentUser();
-        setUser(userData);
-        setNewUsername(userData.username);
-      } catch {
-        // Replace with custom toast
-        toastError("Failed to load user data");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    loadUserData();
-  }, []);
+    if (user) {
+      setNewName(user.name);
+    }
+  }, [user]);
 
-  const handleUsernameUpdate = async (e: React.FormEvent) => {
+  // Display error when auth error changes
+  useEffect(() => {
+    if (error) {
+      toastError(error);
+    }
+  }, [error]);
+
+  const handleNameUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newUsername.trim()) {
-      // Replace with custom toast
-      toastError("Username cannot be empty");
+    if (!newName.trim()) {
+      toastError("Name cannot be empty");
       return;
     }
     
     try {
-      setIsUpdatingUsername(true);
-      await userService.updateUsername(newUsername);
-      setUser(prev => prev ? { ...prev, username: newUsername } : null);
-      // Replace with custom toast
-      toastSuccess("Username updated successfully");
-    } catch {
-      // Replace with custom toast
-      toastError("Failed to update username");
+      setIsUpdatingName(true);
+      const success = await updateName(newName);
+      
+      if (success) {
+        toastSuccess("Name updated successfully");
+      }
+    } catch (error) {
+      toastError("Failed to update name");
     } finally {
-      setIsUpdatingUsername(false);
+      setIsUpdatingName(false);
     }
   };
 
@@ -99,27 +70,26 @@ export default function ProfilePage() {
     e.preventDefault();
     
     if (!currentPassword || !newPassword || !confirmPassword) {
-      // Replace with custom toast
       toastError("All password fields are required");
       return;
     }
     
     if (newPassword !== confirmPassword) {
-      // Replace with custom toast
       toastError("New passwords do not match");
       return;
     }
     
     try {
       setIsUpdatingPassword(true);
-      await userService.updatePassword(currentPassword, newPassword);
-      // Replace with custom toast
-      toastSuccess("Password updated successfully");
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-    } catch {
-      // Replace with custom toast
+      const success = await updatePassword(currentPassword, newPassword, confirmPassword);
+      
+      if (success) {
+        toastSuccess("Password updated successfully");
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      }
+    } catch (error) {
       toastError("Failed to update password");
     } finally {
       setIsUpdatingPassword(false);
@@ -144,7 +114,7 @@ export default function ProfilePage() {
 
       <Separator />
 
-      {isLoading ? (
+      {authLoading ? (
         <div className="flex justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -160,8 +130,8 @@ export default function ProfilePage() {
               <div className="flex items-center gap-3">
                 <User className="h-5 w-5 text-muted-foreground" />
                 <div>
-                  <p className="text-sm font-medium leading-none">Username</p>
-                  <p className="text-sm text-muted-foreground mt-1">{user?.username}</p>
+                  <p className="text-sm font-medium leading-none">Name</p>
+                  <p className="text-sm text-muted-foreground mt-1">{user?.name}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -171,39 +141,49 @@ export default function ProfilePage() {
                   <p className="text-sm text-muted-foreground mt-1">{user?.email}</p>
                 </div>
               </div>
+              {user?.created_at && (
+                <div className="flex items-center gap-3">
+                  <div>
+                    <p className="text-sm font-medium leading-none">Member Since</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {new Date(user.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Update Username */}
+          {/* Update Name */}
           <Card>
             <CardHeader>
-              <CardTitle>Update Username</CardTitle>
+              <CardTitle>Update Name</CardTitle>
               <CardDescription>Change your display name</CardDescription>
             </CardHeader>
-            <form onSubmit={handleUsernameUpdate}>
+            <form onSubmit={handleNameUpdate}>
               <CardContent>
                 <div className="grid gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="username">New Username</Label>
+                    <Label htmlFor="name">New Name</Label>
                     <Input
-                      id="username"
-                      placeholder="Enter new username"
-                      value={newUsername}
-                      onChange={(e) => setNewUsername(e.target.value)}
-                      disabled={isUpdatingUsername}
+                      id="name"
+                      placeholder="Enter new name"
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      disabled={isUpdatingName}
                     />
                   </div>
                 </div>
               </CardContent>
               <CardFooter className="flex justify-end">
-                <Button type="submit" disabled={isUpdatingUsername}>
-                  {isUpdatingUsername ? (
+                <Button type="submit" disabled={isUpdatingName}>
+                  {isUpdatingName ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating...
                     </>
                   ) : (
                     <>
-                      <Check className="mr-2 h-4 w-4" /> Update Username
+                      <Check className="mr-2 h-4 w-4" /> Update Name
                     </>
                   )}
                 </Button>

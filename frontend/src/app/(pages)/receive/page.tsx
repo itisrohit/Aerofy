@@ -40,9 +40,6 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-// Remove Toaster import since it should only be in the root layout
-// import { Toaster } from "@/components/ui/sonner";
-// Keep toast import if needed for other functionality
 import { toast } from "sonner";
 import {
   Dialog,
@@ -52,274 +49,44 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useReceive } from "@/hooks/useReceive";
+import { formatDistanceToNow } from "date-fns";
 
 const ITEMS_PER_PAGE = 5;
 
-// API service for file operations - replace with your actual API calls
-const fileService = {
-  accessFile: async (accessCode: string, password: string): Promise<any> => {
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      if (accessCode && password) {
-        return { 
-          success: true, 
-          message: "File access granted",
-          file: {
-            id: 123,
-            name: "shared-document.pdf",
-            size: "3.2 MB",
-            expiresOn: "2023-12-31",
-            downloadUrl: "#"
-          }
-        };
-      } else {
-        throw new Error("Invalid access code or password");
-      }
-    } catch (error) {
-      console.error("File access failed:", error);
-      throw new Error("Failed to access file");
-    }
-  },
-
-  getRecentFiles: async (
-    page: number = 1,
-    limit: number = ITEMS_PER_PAGE
-  ): Promise<any> => {
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      const mockFiles = [
-        {
-          id: 1,
-          name: "received-presentation.pdf",
-          size: "2.4 MB",
-          date: "2023-06-12",
-          status: "available",
-          from: "alex@example.com"
-        },
-        {
-          id: 2,
-          name: "shared-document.docx",
-          size: "1.8 MB",
-          date: "2023-06-10",
-          status: "available",
-          from: "taylor@example.com"
-        },
-        {
-          id: 3,
-          name: "project-image.jpg",
-          size: "4.2 MB",
-          date: "2023-06-08",
-          status: "expired",
-          from: "jordan@example.com"
-        },
-        {
-          id: 4,
-          name: "budget.xlsx",
-          size: "3.1 MB",
-          date: "2023-06-05",
-          status: "available",
-          from: "casey@example.com"
-        },
-        {
-          id: 5,
-          name: "contract.pdf",
-          size: "5.7 MB",
-          date: "2023-06-01",
-          status: "available",
-          from: "morgan@example.com"
-        },
-        {
-          id: 6,
-          name: "meeting-notes.txt",
-          size: "0.2 MB",
-          date: "2023-05-28",
-          status: "expired",
-          from: "robin@example.com"
-        },
-      ];
-
-      const startIndex = (page - 1) * limit;
-      const paginatedFiles = mockFiles.slice(startIndex, startIndex + limit);
-
-      return {
-        files: paginatedFiles,
-        total: mockFiles.length,
-        page,
-        limit,
-      };
-    } catch (error) {
-      console.error("Failed to fetch recent files:", error);
-      throw new Error("Failed to load recent files");
-    }
-  },
-
-  getPendingFiles: async (): Promise<any> => {
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      const mockPendingFiles = [
-        {
-          id: 10,
-          name: "confidential-report.pdf",
-          size: "4.7 MB",
-          sharedDate: "2023-06-15",
-          from: "director@example.com",
-          accessCode: "ABC123"
-        },
-        {
-          id: 11,
-          name: "project-proposal.docx",
-          size: "2.1 MB",
-          sharedDate: "2023-06-14",
-          from: "partner@example.com", 
-          accessCode: "XYZ789"
-        }
-      ];
-
-      return mockPendingFiles;
-    } catch (error) {
-      console.error("Failed to fetch pending files:", error);
-      throw new Error("Failed to load pending files");
-    }
-  },
-
-  acceptFile: async (fileId: number, accessCode: string, password: string): Promise<any> => {
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      return { 
-        success: true, 
-        message: "File accepted successfully",
-        file: {
-          id: fileId,
-          name: "confidential-report.pdf",
-          size: "4.7 MB",
-          expiresOn: "2023-12-31",
-          downloadUrl: "#"
-        }
-      };
-    } catch (error) {
-      console.error("Failed to accept file:", error);
-      throw new Error("Failed to accept file");
-    }
-  },
-};
-
 export default function ReceivePage() {
-  const [accessCode, setAccessCode] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [isVerifying, setIsVerifying] = useState<boolean>(false);
-  const [currentFile, setCurrentFile] = useState<any>(null);
-  const [downloadProgress, setDownloadProgress] = useState<number>(0);
-  const [isDownloading, setIsDownloading] = useState<boolean>(false);
-  const [recentFiles, setRecentFiles] = useState<any[]>([]);
-  const [totalFiles, setTotalFiles] = useState<number>(0);
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [showPasswordDialog, setShowPasswordDialog] = useState<boolean>(false);
-  const [selectedFileId, setSelectedFileId] = useState<number | null>(null);
-  const [pendingFiles, setPendingFiles] = useState<any[]>([]);
-  const [loadingPending, setLoadingPending] = useState<boolean>(false);
+  const [showAcceptDialog, setShowAcceptDialog] = useState<boolean>(false);
   const [selectedPendingFile, setSelectedPendingFile] = useState<any>(null);
   const [acceptPassword, setAcceptPassword] = useState<string>("");
-  const [isAccepting, setIsAccepting] = useState<boolean>(false);
-  const [showAcceptDialog, setShowAcceptDialog] = useState<boolean>(false);
 
-  const totalPages = Math.ceil(totalFiles / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const {
+    // States
+    pendingFiles,
+    receivedFiles,
+    isLoadingPending,
+    isLoadingReceived,
+    isAccepting,
+    isDownloading,
+    downloadingFileId, // Add this property
+    downloadProgress,
+    error,
+    
+    // Pagination
+    currentPendingPage,
+    currentReceivedPage,
+    totalPendingPages,
+    totalReceivedPages,
+    pendingStartIndex,
+    receivedStartIndex,
+    
+    // Actions
+    handleAcceptFile,
+    handleDownloadFile,
+    handlePendingPageChange,
+    handleReceivedPageChange,
+  } = useReceive(ITEMS_PER_PAGE);
 
-  const loadRecentFiles = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const response = await fileService.getRecentFiles(currentPage);
-      setRecentFiles(response.files);
-      setTotalFiles(response.total);
-    } catch (error) {
-      toastError("Failed to load recent files");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [currentPage]);
-
-  const loadPendingFiles = useCallback(async () => {
-    try {
-      setLoadingPending(true);
-      const pendingFiles = await fileService.getPendingFiles();
-      setPendingFiles(pendingFiles);
-    } catch (error) {
-      toastError("Failed to load pending files");
-    } finally {
-      setLoadingPending(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadRecentFiles();
-    loadPendingFiles();
-  }, [loadRecentFiles, loadPendingFiles]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!accessCode.trim() || !password.trim()) {
-      toastError("Please enter both access code and password");
-      return;
-    }
-
-    try {
-      setIsVerifying(true);
-      const result = await fileService.accessFile(accessCode, password);
-      setCurrentFile(result.file);
-      toastSuccess("File access granted");
-      setAccessCode("");
-      setPassword("");
-    } catch (error) {
-      toastError("Access denied", {
-        description: "Invalid access code or password",
-      });
-    } finally {
-      setIsVerifying(false);
-    }
-  };
-
-  const simulateProgress = () => {
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.random() * 15;
-      if (progress >= 100) {
-        progress = 100;
-        clearInterval(interval);
-      }
-      setDownloadProgress(Math.min(progress, 100));
-    }, 300);
-
-    return () => clearInterval(interval);
-  };
-
-  const handleDownload = async (fileId: number) => {
-    const file = recentFiles.find(f => f.id === fileId);
-    if (!file) return;
-
-    setIsDownloading(true);
-    setDownloadProgress(0);
-
-    const stopProgress = simulateProgress();
-
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      stopProgress();
-      setDownloadProgress(100);
-      toastSuccess("File downloaded successfully");
-    } catch (error) {
-      toastError("Download failed", {
-        description: "There was an error downloading your file",
-      });
-    } finally {
-      setTimeout(() => {
-        setIsDownloading(false);
-        setDownloadProgress(0);
-      }, 500);
-    }
-  };
-
-  const handleAcceptFile = async (e: React.FormEvent) => {
+  const handleAccept = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPendingFile || !acceptPassword) {
       toastError("Please enter password");
@@ -327,31 +94,40 @@ export default function ReceivePage() {
     }
 
     try {
-      setIsAccepting(true);
-      await fileService.acceptFile(
-        selectedPendingFile.id, 
-        selectedPendingFile.accessCode, 
-        acceptPassword
-      );
-      setPendingFiles(prev => 
-        prev.filter(file => file.id !== selectedPendingFile.id)
-      );
-      await loadRecentFiles();
-      toastSuccess("File accepted successfully");
-      setShowAcceptDialog(false);
-      setAcceptPassword("");
+      const success = await handleAcceptFile(selectedPendingFile.shared_id, acceptPassword);
+      
+      if (success) {
+        toastSuccess("File accepted successfully");
+        setShowAcceptDialog(false);
+        setAcceptPassword("");
+      } else {
+        toastError("Could not accept file", {
+          description: "Invalid password"
+        });
+      }
     } catch (error) {
       toastError("Could not accept file", {
-        description: "Invalid password"
+        description: "An error occurred while accepting the file"
       });
-    } finally {
-      setIsAccepting(false);
     }
   };
 
   const openAcceptDialog = (file: any) => {
     setSelectedPendingFile(file);
     setShowAcceptDialog(true);
+  };
+
+  const handleDownloadClick = async (shared_id: string, fileName: string) => {
+    try {
+      const success = await handleDownloadFile(shared_id, fileName);
+      if (success) {
+        toastSuccess("File downloaded successfully");
+      }
+    } catch (error) {
+      toastError("Download failed", {
+        description: "There was an error downloading your file",
+      });
+    }
   };
 
   const getFileTypeIcon = (filename: string) => {
@@ -365,6 +141,16 @@ export default function ReceivePage() {
         return <FileText size={16} />;
       default:
         return <File size={16} />;
+    }
+  };
+
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return formatDistanceToNow(date, { addSuffix: true });
+    } catch (error) {
+      return dateString;
     }
   };
 
@@ -403,61 +189,100 @@ export default function ReceivePage() {
       </div>
 
       {/* Pending Files Section */}
-      {pendingFiles.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Pending Files</CardTitle>
-            <CardDescription>
-              Files shared with you that need to be accepted
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loadingPending ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>From</TableHead>
-                    <TableHead>Size</TableHead>
-                    <TableHead>Date Shared</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pendingFiles.map((file) => (
-                    <TableRow key={file.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center">
-                          <div className="p-2 bg-amber-50 rounded mr-2">
-                            <Shield size={16} className="text-amber-600" />
-                          </div>
-                          {file.name}
+      <Card>
+        <CardHeader>
+          <CardTitle>Pending Files</CardTitle>
+          <CardDescription>
+            Files shared with you that need to be accepted
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoadingPending ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : pendingFiles.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>From</TableHead>
+                  <TableHead>Date Shared</TableHead>
+                  <TableHead>Expires</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pendingFiles.map((file) => (
+                  <TableRow key={file.file_id}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center">
+                        <div className="p-2 bg-amber-50 rounded mr-2">
+                          <Shield size={16} className="text-amber-600" />
                         </div>
-                      </TableCell>
-                      <TableCell>{file.from}</TableCell>
-                      <TableCell>{file.size}</TableCell>
-                      <TableCell>{file.sharedDate}</TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openAcceptDialog(file)}
-                        >
-                          Accept
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-      )}
+                        {file.file_name || "Unnamed file"}
+                      </div>
+                    </TableCell>
+                    <TableCell>{file.sender_email}</TableCell>
+                    <TableCell>{formatDate(file.created_at)}</TableCell>
+                    <TableCell>{formatDate(file.expiration_date)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openAcceptDialog(file)}
+                      >
+                        Accept
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              No pending files to accept
+            </div>
+          )}
+        </CardContent>
+        {pendingFiles.length > 0 && totalPendingPages > 1 && (
+          <CardFooter className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              Showing {pendingStartIndex + 1} to{" "}
+              {Math.min(pendingStartIndex + ITEMS_PER_PAGE, pendingFiles.length)} of{" "}
+              {pendingFiles.length} files
+            </p>
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => handlePendingPageChange(Math.max(currentPendingPage - 1, 1))}
+                    className={currentPendingPage === 1 ? "pointer-events-none opacity-50" : ""}
+                  />
+                </PaginationItem>
+                {Array.from({ length: totalPendingPages }, (_, i) => i + 1).map(
+                  (page) => (
+                    <PaginationItem key={page}>
+                      <PaginationLink
+                        isActive={page === currentPendingPage}
+                        onClick={() => handlePendingPageChange(page)}
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  )
+                )}
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => handlePendingPageChange(Math.min(currentPendingPage + 1, totalPendingPages))}
+                    className={currentPendingPage === totalPendingPages ? "pointer-events-none opacity-50" : ""}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </CardFooter>
+        )}
+      </Card>
 
       {/* Accept File Dialog */}
       <Dialog 
@@ -469,14 +294,14 @@ export default function ReceivePage() {
           setShowAcceptDialog(open);
         }}
       >
-        <DialogContent className="sm:max-w-[425px]" hideCloseButton={true}>
+        <DialogContent className="sm:max-w-[425px]" hideCloseButton={false}>
           <DialogHeader>
             <DialogTitle>Accept Shared File</DialogTitle>
             <DialogDescription>
-              Enter the password to access {selectedPendingFile?.name}
+              Enter the password to access {selectedPendingFile?.file_name || "this file"}
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleAcceptFile}>
+          <form onSubmit={handleAccept}>
             <div className="grid gap-4 py-4">
               <div className="flex items-center gap-4">
                 <Lock className="h-4 w-4 text-muted-foreground" />
@@ -514,72 +339,54 @@ export default function ReceivePage() {
         </DialogContent>
       </Dialog>
 
-      {/* Recent Files List */}
+      {/* Received Files List */}
       <Card>
         <CardHeader>
-          <CardTitle>Recently Received Files</CardTitle>
+          <CardTitle>Received Files</CardTitle>
           <CardDescription>Access your previously received files</CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {isLoadingReceived ? (
             <div className="flex justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          ) : recentFiles.length > 0 ? (
+          ) : receivedFiles.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>From</TableHead>
-                  <TableHead>Size</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Date Received</TableHead>
+                  <TableHead>Expires</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentFiles.map((file) => (
-                  <TableRow key={file.id}>
+                {receivedFiles.map((file) => (
+                  <TableRow key={file.file_id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center">
                         <div className="p-2 bg-primary/5 rounded mr-2">
-                          {getFileTypeIcon(file.name)}
+                          {getFileTypeIcon(file.file_name || "file")}
                         </div>
-                        {file.name}
+                        {file.file_name || "Unnamed file"}
                       </div>
                     </TableCell>
-                    <TableCell>{file.from}</TableCell>
-                    <TableCell>{file.size}</TableCell>
-                    <TableCell>{file.date}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={file.status === "available" ? "outline" : "secondary"}
-                        className={
-                          file.status === "available"
-                            ? "bg-green-50 text-green-700 border-green-200"
-                            : "bg-gray-50 text-gray-500"
-                        }
-                      >
-                        {file.status === "available" ? (
-                          <Check className="mr-1 h-3 w-3" />
-                        ) : null}
-                        {file.status === "available" ? "Available" : "Expired"}
-                      </Badge>
-                    </TableCell>
+                    <TableCell>{file.sender_email}</TableCell>
+                    <TableCell>{formatDate(file.created_at)}</TableCell>
+                    <TableCell>{formatDate(file.expiration_date)}</TableCell>
                     <TableCell className="text-right">
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          if (file.status === "available") {
-                            handleDownload(file.id);
-                          } else {
-                            toastError("This file has expired and is no longer available");
-                          }
-                        }}
-                        disabled={file.status !== "available" || isDownloading}
+                        onClick={() => handleDownloadClick(file.shared_id, file.file_name)}
+                        disabled={isDownloading && downloadingFileId === file.shared_id}
                       >
-                        <Download className="h-4 w-4" />
+                        {isDownloading && downloadingFileId === file.shared_id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Download className="h-4 w-4" />
+                        )}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -592,31 +399,29 @@ export default function ReceivePage() {
             </div>
           )}
         </CardContent>
-        {recentFiles.length > 0 && (
+        {receivedFiles.length > 0 && totalReceivedPages > 1 && (
           <CardFooter className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              Showing {startIndex + 1} to{" "}
-              {Math.min(startIndex + ITEMS_PER_PAGE, totalFiles)} of{" "}
-              {totalFiles} files
+              Showing {receivedStartIndex + 1} to{" "}
+              {Math.min(receivedStartIndex + ITEMS_PER_PAGE, receivedFiles.length)} of{" "}
+              {receivedFiles.length} files
             </p>
             <Pagination>
               <PaginationContent>
                 <PaginationItem>
                   <PaginationPrevious
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.max(prev - 1, 1))
-                    }
+                    onClick={() => handleReceivedPageChange(Math.max(currentReceivedPage - 1, 1))}
                     className={
-                      currentPage === 1 ? "pointer-events-none opacity-50" : ""
+                      currentReceivedPage === 1 ? "pointer-events-none opacity-50" : ""
                     }
                   />
                 </PaginationItem>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                {Array.from({ length: totalReceivedPages }, (_, i) => i + 1).map(
                   (page) => (
                     <PaginationItem key={page}>
                       <PaginationLink
-                        isActive={page === currentPage}
-                        onClick={() => setCurrentPage(page)}
+                        isActive={page === currentReceivedPage}
+                        onClick={() => handleReceivedPageChange(page)}
                       >
                         {page}
                       </PaginationLink>
@@ -625,11 +430,11 @@ export default function ReceivePage() {
                 )}
                 <PaginationItem>
                   <PaginationNext
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                    onClick={() => 
+                      handleReceivedPageChange(Math.min(currentReceivedPage + 1, totalReceivedPages))
                     }
                     className={
-                      currentPage === totalPages
+                      currentReceivedPage === totalReceivedPages
                         ? "pointer-events-none opacity-50"
                         : ""
                     }
