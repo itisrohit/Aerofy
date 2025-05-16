@@ -95,7 +95,7 @@ frontend/
     ├── store/             # Global state management (Zustand)
     │   ├── authStore.ts   # User session state
     │   ├── sendStore.ts   # File sending state
-    │   └── receiveStore.ts# File receiving state
+    │   └── receiveStore.ts # File receiving state
     ├── lib/               # Shared libraries/utilities
     │   └── utils.ts       # Shared helper functions
     ├── types/             # Global TS types/interfaces
