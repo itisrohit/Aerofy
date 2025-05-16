@@ -152,11 +152,11 @@ const HowItWorksPage = () => {
                 <ul className="space-y-3 text-slate-600">
                   <li className="flex items-start bg-white p-3 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300">
                     <span className="text-blue-500 mr-2 mt-1">•</span>
-                    <span>Fill in your name, email, and a secure password—no paperwork, no waiting rooms.</span>
+                    <span>Fill in your name, email, and a secure password&mdash;no paperwork, no waiting rooms.</span>
                   </li>
                   <li className="flex items-start bg-white p-3 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300">
                     <span className="text-blue-500 mr-2 mt-1">•</span>
-                    <span>Instantly get a secret keypair (digital lock & key) created just for you.</span>
+                    <span>Instantly get a secret keypair (digital lock &amp; key) created just for you.</span>
                   </li>
                   <li className="flex items-start bg-white p-3 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300">
                     <span className="text-blue-500 mr-2 mt-1">•</span>
@@ -181,11 +181,11 @@ const HowItWorksPage = () => {
                 <ul className="space-y-2 text-slate-600">
                   <li className="flex items-start">
                     <span className="text-amber-500 mr-2">•</span>
-                    <span>Drag your file—photo, document, video—right onto the upload area.</span>
+                    <span>Drag your file&mdash;photo, document, video&mdash;right onto the upload area.</span>
                   </li>
                   <li className="flex items-start">
                     <span className="text-amber-500 mr-2">•</span>
-                    <span>Enter your recipient's email address. They'll be the only one who can open your package.</span>
+                    <span>Enter your recipient&apos;s email address. They&apos;ll be the only one who can open your package.</span>
                   </li>
                   <li className="flex items-start">
                     <span className="text-amber-500 mr-2">•</span>
@@ -214,7 +214,7 @@ const HowItWorksPage = () => {
                   </li>
                   <li className="flex items-start">
                     <span className="text-green-500 mr-2">•</span>
-                    <span>You see a friendly confirmation: "Your file is on its way!"</span>
+                    <span>You see a friendly confirmation: &quot;Your file is on its way!&quot;</span>
                   </li>
                 </ul>
               </div>
@@ -239,7 +239,7 @@ const HowItWorksPage = () => {
                   </li>
                   <li className="flex items-start">
                     <span className="text-purple-500 mr-2">•</span>
-                    <span>They click, enter the password if you set one, and the file arrives onto their device—no sweat.</span>
+                    <span>They click, enter the password if you set one, and the file arrives onto their device&mdash;no sweat.</span>
                   </li>
                 </ul>
               </div>
@@ -260,7 +260,7 @@ const HowItWorksPage = () => {
                 <ul className="space-y-2 text-slate-600">
                   <li className="flex items-start">
                     <span className="text-indigo-500 mr-2">•</span>
-                    <span>Once the link expires, Aerofy "self-destructs" that envelope. No more access, no more clutter.</span>
+                    <span>Once the link expires, Aerofy &quot;self-destructs&quot; that envelope. No more access, no more clutter.</span>
                   </li>
                 </ul>
               </div>
@@ -333,7 +333,7 @@ const HowItWorksPage = () => {
                     <Lock className="h-5 w-5 text-amber-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900 mb-1">Lock & Key, Simplified</h3>
+                    <h3 className="font-semibold text-slate-900 mb-1">Lock &amp; Key, Simplified</h3>
                     <p className="text-slate-600 text-sm">Automatic strong encryption turns your files into unreadable codes.</p>
                   </div>
                 </div>
@@ -392,7 +392,7 @@ const HowItWorksPage = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-slate-900 mb-1">Works Everywhere</h3>
-                    <p className="text-slate-600 text-sm">Desktop, tablet, or phone—if you've got a browser, you're all set.</p>
+                    <p className="text-slate-600 text-sm">Desktop, tablet, or phone—if you&apos;ve got a browser, you&apos;re all set.</p>
                   </div>
                 </div>
               </Card>
@@ -454,7 +454,7 @@ const HowItWorksPage = () => {
                 </li>
                 <li className="flex items-start">
                   <span className="text-blue-500 mr-2">•</span>
-                  <span>That lock itself gets double-locked using your recipient's public key (RSA-2048).</span>
+                  <span>That lock itself gets double-locked using your recipient&apos;s public key (RSA-2048).</span>
                 </li>
               </ul>
             </motion.div>
@@ -479,7 +479,7 @@ const HowItWorksPage = () => {
                 </li>
                 <li className="flex items-start">
                   <span className="text-amber-500 mr-2">•</span>
-                  <span>Nobody—<em>not even us</em>—can peek inside without the right keys.</span>
+                  <span>Nobody&mdash;<em>not even us</em>&mdash;can peek inside without the right keys.</span>
                 </li>
               </ul>
             </motion.div>
@@ -500,7 +500,7 @@ const HowItWorksPage = () => {
               <ul className="space-y-2 text-slate-600 ml-14">
                 <li className="flex items-start">
                   <span className="text-green-500 mr-2">•</span>
-                  <span>Only your recipient's private key (their secret digital key) can open the outer lock.</span>
+                  <span>Only your recipient&apos;s private key (their secret digital key) can open the outer lock.</span>
                 </li>
                 <li className="flex items-start">
                   <span className="text-green-500 mr-2">•</span>
@@ -544,7 +544,7 @@ const HowItWorksPage = () => {
             <h2 className="text-3xl font-bold text-slate-900">File Sharing Flow: A Story in Seven Steps</h2>
           </div>
           
-          <p className="text-slate-600 mb-10">Imagine you're sending a gift box with Aerofy. Here's the storyline:</p>
+          <p className="text-slate-600 mb-10">Imagine you&apos;re sending a gift box with Aerofy. Here&apos;s the storyline:</p>
 
           {/* Timeline steps - modernized */}
           <div className="relative border-l-4 border-indigo-200 pl-10 ml-6 space-y-16">
@@ -561,7 +561,7 @@ const HowItWorksPage = () => {
               </div>
               <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-md hover:shadow-lg transition-all duration-300">
                 <h3 className="font-bold text-xl text-slate-900 mb-3 flex items-center">
-                  You're Ready to Share
+                  You&apos;re Ready to Share
                   <span className="ml-3 inline-block px-3 py-1 bg-indigo-100 text-xs font-medium text-indigo-700 rounded-full">Step 1</span>
                 </h3>
                 <p className="text-slate-600 text-lg">You log in and click <strong className="text-indigo-600 font-semibold">Upload</strong>—the adventure begins.</p>
@@ -584,7 +584,7 @@ const HowItWorksPage = () => {
                   Pick Your Present
                   <span className="ml-3 inline-block px-3 py-1 bg-indigo-100 text-xs font-medium text-indigo-700 rounded-full">Step 2</span>
                 </h3>
-                <p className="text-slate-600 text-lg">Drag in your file and address the gift to your recipient's email.</p>
+                <p className="text-slate-600 text-lg">Drag in your file and address the gift to your recipient&apos;s email.</p>
               </div>
             </motion.div>
 
@@ -601,7 +601,7 @@ const HowItWorksPage = () => {
               </div>
               <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-md hover:shadow-lg transition-all duration-300">
                 <h3 className="font-bold text-xl text-slate-900 mb-3 flex items-center">
-                  Add a Lock & Timer
+                  Add a Lock &amp; Timer
                   <span className="ml-3 inline-block px-3 py-1 bg-indigo-100 text-xs font-medium text-indigo-700 rounded-full">Step 3</span>
                 </h3>
                 <p className="text-slate-600 text-lg">Set a secret password and decide how long the box stays unopened.</p>
@@ -661,7 +661,7 @@ const HowItWorksPage = () => {
               </div>
               <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-md hover:shadow-lg transition-all duration-300">
                 <h3 className="font-bold text-xl text-slate-900 mb-3 flex items-center">
-                  Unlock & Enjoy
+                  Unlock &amp; Enjoy
                   <span className="ml-3 inline-block px-3 py-1 bg-indigo-100 text-xs font-medium text-indigo-700 rounded-full">Step 6</span>
                 </h3>
                 <p className="text-slate-600 text-lg">They enter the password (if you set one) and unwrap the file instantly.</p>
@@ -701,7 +701,7 @@ const HowItWorksPage = () => {
             transition={{ duration: 0.8, delay: 0.7 }}
             className="text-center text-slate-800 mt-16 font-medium"
           >
-            And that's it! Seven simple moments from upload to cleanup, all happening in the blink of an eye.
+            And that&apos;s it! Seven simple moments from upload to cleanup, all happening in the blink of an eye.
           </motion.p>
           
           {/* New call to action */}
