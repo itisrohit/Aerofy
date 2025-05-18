@@ -35,15 +35,35 @@ const api = axios.create({
     withCredentials: true
 });
 
-
 let authStore: any = null;
 
+// Local logout function that doesn't make API requests
+const localLogout = () => {
+  // Update the store state directly
+  useAuthStore.setState({
+    user: null,
+    isAuthenticated: false,
+    loading: false,
+    error: null
+  });
+  
+  // Clear cookies
+  document.cookie.split(";").forEach((c) => {
+    document.cookie = c
+      .replace(/^ +/, "")
+      .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+  });
+  
+  // Clear localStorage - use your specific storage key
+  localStorage.removeItem('aerofy-auth');
+};
 
+// Updated interceptor using local logout
 api.interceptors.response.use(
     response => response,
     error => {
         if (error.response?.status === 401 && authStore?.getState().isAuthenticated) {
-            authStore.getState().logout();
+            localLogout();
         }
         return Promise.reject(error);
     }
@@ -94,14 +114,7 @@ export const useAuthStore = create(
                     } catch (error) {
                         console.error('Logout error:', error);
                     } finally {
-                        localStorage.removeItem('aerofy-auth');
-                        
-                        set({
-                            user: null,
-                            isAuthenticated: false,
-                            loading: false,
-                            error: null,
-                        });
+                        localLogout();
                     }
                 },
                 
@@ -184,6 +197,5 @@ export const useAuthStore = create(
             })
         } as PersistOptions<AuthState>
     )
-
 );
 
